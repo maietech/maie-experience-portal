@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAIE — Product Experience</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="maie-pixie.js"></script>
+<script src="maie-scene-engine.js"></script>
+<script src="maie-chapter-renderer.js"></script>
+<script src="maie-chapters.js"></script>
+<style>
+
+/* ═══════════════════════════════════════════════════════
+   DESIGN TOKENS — mirrors MAIE global.css + mu-tokens.css
+   ═══════════════════════════════════════════════════════ */
+:root {
+  --primary:        #A52A2A;
+  --primary-light:  #C24E4E;
+  --primary-dark:   #772E25;
+  --primary-glow:   rgba(165,42,42,0.32);
+  --accent:         #FFB400;
+  --bg:             #09090B;
+  --bg-alt:         #0C0D10;
+  --surface:        #111318;
+  --surface-raised: rgba(255,255,255,0.025);
+  --surface-card:   #161820;
+  --border:         rgba(255,255,255,0.07);
+  --border-strong:  rgba(255,255,255,0.13);
+  --border-brand:   rgba(165,42,42,0.35);
+  --text-1:         rgba(232,230,227,0.94);
+  --text-2:         rgba(232,230,227,0.60);
+  --text-3:         rgba(232,230,227,0.38);
+  --text-4:         rgba(232,230,227,0.22);
+  --font-display:   'Bebas Neue', sans-serif;
+  --font-ui:        'DM Sans', sans-serif;
+  --font-mono:      'JetBrains Mono', monospace;
+  --radius-sm: 6px;
+  --radius:    10px;
+  --radius-lg: 16px;
+  --ease:      cubic-bezier(0.4,0,0.2,1);
+  --spring:    cubic-bezier(0.34,1.56,0.64,1);
+  --z-curtain: 50;
+  --z-topbar:  100;
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESET + BASE
+   ═══════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  scroll-behavior: smooth;
+  /* No page-level scroll — the scene engine owns navigation entirely. */
+  overflow: hidden;
+  height: 100%;
+}
+body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--text-1);
+  line-height: 1.6;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SHELL LAYOUT
+   ═══════════════════════════════════════════════════════ */
+.shell {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: auto 1fr;
+  height: 100vh;   /* fills exactly the viewport — no more, no less */
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TOP BAR
+   ═══════════════════════════════════════════════════════ */
+.topbar {
+  grid-column: 1 / -1;
+  height: 52px;
+  background: rgba(9,9,11,0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  gap: 1.25rem;
+  position: sticky;
+  top: 0;
+  z-index: var(--z-topbar);
+}
+
+.topbar-wordmark {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  letter-spacing: 0.1em;
+  color: var(--text-1);
+  flex-shrink: 0;
+}
+.topbar-wordmark span { color: var(--primary-light); }
+
+.topbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.topbar-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.topbar-progress {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  border-radius: 1px;
+  overflow: hidden;
+  max-width: 240px;
+  margin-left: auto;
+}
+.topbar-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+  border-radius: 1px;
+  transition: width 0.5s var(--ease);
+}
+
+.topbar-chapter-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════
+   NAVIGATION SIDEBAR
+   ═══════════════════════════════════════════════════════ */
+.sidenav {
+  background: var(--bg-alt);
+  border-right: 1px solid var(--border);
+  padding: 1.5rem 0;
+  position: sticky;
+  top: 52px;
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidenav-section {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-4);
+  padding: 0 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.55rem 1.25rem;
+  cursor: pointer;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+  border-left: 2px solid transparent;
+  position: relative;
+}
+
+.nav-item:hover {
+  background: rgba(255,255,255,0.03);
+  color: var(--text-1);
+}
+
+.nav-item.active {
+  background: rgba(165,42,42,0.1);
+  border-left-color: var(--primary);
+}
+
+.nav-item-num {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-4);
+  width: 18px;
+  flex-shrink: 0;
+}
+.nav-item.active .nav-item-num { color: var(--primary-light); }
+
+.nav-item-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-2);
+  flex: 1;
+}
+.nav-item.active .nav-item-label { color: var(--text-1); }
+
+.nav-item-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.nav-item.active .nav-item-dot { background: var(--primary-light); }
+.nav-item.done .nav-item-dot { background: rgba(34,197,94,0.6); }
+
+.sidenav-footer {
+  margin-top: auto;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+.sidenav-footer-label {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-4);
+  margin-bottom: 0.5rem;
+}
+
+/* Ambient pixie in sidebar footer */
+/* ambient-pixie: 116px bitmap → 80px rendered = same visual as old 96px,
+   but the 18% margin around it lets the aura/glow fall off naturally. */
+#ambient-pixie { display: block; margin: 0 auto; width: 80px; height: auto; }
+
+/* ═══════════════════════════════════════════════════════
+   MAIN CONTENT AREA
+   ═══════════════════════════════════════════════════════ */
+.content {
+  /* Viewport stage: exactly fills the grid cell below the topbar. */
+  overflow: hidden;
+  height: calc(100vh - 52px);
+  position: relative;
+}
+
+/*
+  Module wrapper — each scene fills the stage exactly.
+  The scene engine mounts one .active at a time;
+  all others are display:none, off-document.
+  Flex layout flows header → scrollable body → sticky footer nav.
+*/
+.module {
+  display: none;
+  position: absolute;
+  inset: 0;
+  height: calc(100vh - 52px);
+  flex-direction: column;
+  overflow: hidden; /* outer clip is hard */
+}
+.module.active {
+  display: flex;
+  animation: mod-enter 0.6s var(--ease) both;
+  will-change: transform, opacity, filter;
+}
+.module.leaving {
+  display: flex;
+  animation: mod-leave 0.32s var(--ease) both;
+  pointer-events: none;
+  will-change: transform, opacity, filter;
+}
+
+/*
+  .mod-body — the content region inside each scene.
+  overflow-y:auto so scenes that are genuinely dense can still be
+  scrolled by the reader without the outer page moving.
+  This is intentional: we're preventing navigation from being a scroll;
+  we're not forcing everything to be compressed to fit.
+*/
+.mod-body::-webkit-scrollbar { width: 4px; }
+.mod-body::-webkit-scrollbar-track { background: transparent; }
+.mod-body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+
+@keyframes mod-enter {
+  0%   { opacity: 0; transform: scale(1.012); filter: blur(8px); }
+  100% { opacity: 1; transform: scale(1);     filter: blur(0); }
+}
+@keyframes mod-leave {
+  0%   { opacity: 1; transform: scale(1);     filter: blur(0); }
+  100% { opacity: 0; transform: scale(0.988); filter: blur(8px); }
+}
+
+/*
+  Stage curtain — sits above all scenes, below the sidenav.
+  The .flash class triggers the through-black animation.
+  Timing: flash duration (620ms) must be ≥ TRANSITION_MS in
+  maie-scene-engine.js. The 45% peak-opacity keyframe aligns with
+  the 260ms midpoint where the incoming scene first paints.
+*/
+.stage-curtain {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  z-index: var(--z-curtain);
+  pointer-events: none;
+  opacity: 0;
+}
+.stage-curtain.flash {
+  animation: curtain-flash 0.62s var(--ease) both;
+}
+@keyframes curtain-flash {
+  0%   { opacity: 0; }
+  42%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   MODULE CHROME — shared header for every chapter
+   ═══════════════════════════════════════════════════════ */
+.mod-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: clamp(1rem, 3vh, 2.2rem) clamp(1.5rem, 3vw, 2.5rem) 0;
+  gap: 2rem;
+  flex-shrink: 0;
+}
+
+.mod-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--primary-light);
+  margin-bottom: 0.5rem;
+}
+
+.mod-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 3.4vh, 3.4rem);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  line-height: 1;
+}
+
+.mod-subtitle {
+  font-size: clamp(0.78rem, 1.5vh, 0.9rem);
+  color: var(--text-2);
+  max-width: 480px;
+  line-height: 1.55;
+  margin-top: 0.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════
+   UNIFIED MODULE BODY
+   ═══════════════════════════════════════════════════════ */
+.mod-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: clamp(0.875rem, 2vh, 2rem) clamp(1.5rem, 3vw, 2.5rem) clamp(1.5rem, 3vh, 2rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* prevents top-clipping on tall scenes */
+  gap: clamp(0.625rem, 1.4vh, 1.5rem);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+/* Short scenes self-center without clipping tall ones */
+.scene {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 1.2vh, 1.25rem);
+  width: 100%;
+  margin: auto 0;
+}
+
+/* Chapter nav footer */
+.chapter-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(0.75rem, 1.8vh, 1.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.chapter-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s var(--ease);
+}
+.chapter-nav-btn:hover {
+  border-color: var(--border-brand);
+  color: var(--text-1);
+  background: rgba(165,42,42,0.07);
+}
+.chapter-nav-btn.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.chapter-nav-btn.primary:hover {
+  background: var(--primary-light);
+  border-color: var(--primary-light);
+  box-shadow: 0 4px 16px var(--primary-glow);
+}
+.chapter-nav-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SHARED COMPONENTS
+   ═══════════════════════════════════════════════════════ */
+.card {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: clamp(0.75rem, 1.6vh, 1.25rem);
+  transition: border-color 0.2s var(--ease);
+}
+.card:hover { border-color: var(--border-brand); }
+
+.card-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 0.35rem;
+}
+
+.card-title {
+  font-size: clamp(0.82rem, 1.5vh, 0.95rem);
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 0.3rem;
+  line-height: 1.25;
+}
+
+.card-body {
+  font-size: clamp(0.72rem, 1.35vh, 0.82rem);
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+.pill-brand {
+  background: rgba(165,42,42,0.12);
+  border-color: rgba(165,42,42,0.35);
+  color: var(--primary-light);
+}
+.pill-accent {
+  background: rgba(255,180,0,0.1);
+  border-color: rgba(255,180,0,0.3);
+  color: var(--accent);
+}
+.pill-muted {
+  background: rgba(255,255,255,0.04);
+  border-color: var(--border);
+  color: var(--text-3);
+}
+
+.audience-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 6px 0 10px;
+}
+.audience-pill {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid;
+  opacity: 0.85;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: clamp(0.75rem, 1.6vh, 1.5rem) 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   MODULE 01 — VISION
+   ═══════════════════════════════════════════════════════ */
+#mod-vision {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.vision-hero {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: clamp(0.75rem, 2vh, 2rem);
+  align-items: center;
+  padding: clamp(0.75rem, 2vh, 2.5rem) clamp(1.5rem, 3vw, 2.5rem) 0;
+  flex: 1 1 0;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.vision-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 80% at 15% 60%, rgba(165,42,42,0.12) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 50% at 90% 20%, rgba(255,180,0,0.05) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.vision-tagline {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5.5vh, 5rem);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  line-height: 0.95;
+  position: relative;
+  z-index: 1;
+}
+.vision-tagline em {
+  font-style: normal;
+  color: var(--primary-light);
+  display: block;
+}
+
+.vision-deck {
+  position: relative;
+  z-index: 1;
+  margin-top: clamp(0.75rem, 1.6vh, 1.5rem);
+  max-width: 500px;
+}
+
+.vision-statement {
+  font-size: clamp(0.82rem, 1.7vh, 1rem);
+  color: var(--text-2);
+  line-height: 1.55;
+  border-left: 2px solid var(--primary);
+  padding-left: 1rem;
+}
+
+.vision-pixie-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 1;
+  padding-top: 1rem;
+  /* The canvas bitmap is 720×720 for glow breathing room.
+     CSS max-width/max-height scales the rendered image back
+     down to fit the grid cell — the extra pixels are invisible
+     margin for the radial aura, not visual size. */
+}
+
+.vision-pixie-wrap canvas {
+  width: 100%;
+  max-width: clamp(280px, 42vh, 520px);
+  height: auto;
+}
+
+.vision-pixie-label {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-4);
+  text-align: center;
+}
+
+.vision-pillars {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 1rem;
+  padding: 0 2.5rem;
+  margin-top: 1rem;
+}
+
+.pillar {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s var(--ease), transform 0.2s var(--ease);
+  cursor: default;
+}
+.pillar:hover {
+  border-color: var(--border-brand);
+  transform: translateY(-2px);
+}
+.pillar::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  border-radius: 0 0 var(--radius) var(--radius);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.pillar:hover::after { opacity: 1; }
+.pillar-1::after { background: var(--primary); }
+.pillar-2::after { background: var(--accent); }
+.pillar-3::after { background: rgba(168,85,247,0.8); }
+
+.pillar-num {
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--border-strong);
+  line-height: 1;
+  margin-bottom: 0.75rem;
+  transition: color 0.2s;
+}
+.pillar:hover .pillar-num { color: var(--border-brand); }
+.pillar-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  margin-bottom: 0.4rem;
+}
+.pillar-body { font-size: 0.8rem; color: var(--text-2); line-height: 1.6; }
+
+.vision-problem {
+  margin: 1.5rem 2.5rem 0;
+  background: rgba(255,255,255,0.018);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1.25rem;
+  align-items: center;
+}
+.vision-problem-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+}
+.vision-problem-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.problem-tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(239,68,68,0.07);
+  border: 1px solid rgba(239,68,68,0.18);
+  color: rgba(239,68,68,0.75);
+  letter-spacing: 0.04em;
+}
+
+/* ═══════════════════════════════════════════════════════
+   MODULE 03 — MEET MAIE (Platform anchor)
+   ═══════════════════════════════════════════════════════ */
+#mod-platform .mod-body {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.625rem, 1.4vh, 1.5rem);
+}
+
+/* Three pillar cards with live Pixie in center */
+.platform-hero {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.platform-pixie-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.5rem;
+}
+.platform-pixie-center canvas {
+  /* 260px bitmap → 120px rendered: 2.17× stage-to-performer ratio gives
+     the radial glow/aura ~70px of canvas to fall off naturally on each
+     side before hitting the bitmap edge — no clipping at any phase energy. */
+  width: 120px;
+  height: auto;
+}
+
+.platform-pixie-phase {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  text-align: center;
+  transition: color 0.3s;
+}
+.platform-pixie-phase.active { color: var(--primary-light); }
+
+.platform-pillar {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.platform-pillar.highlight {
+  border-color: var(--border-brand);
+  box-shadow: 0 0 0 1px rgba(165,42,42,0.15), 0 8px 24px rgba(0,0,0,0.3);
+}
+
+.platform-pillar-icon {
+  font-size: 1.25rem;
+  margin-bottom: 0.6rem;
+}
+.platform-pillar-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  margin-bottom: 0.35rem;
+}
+.platform-pillar-body {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.platform-pillar-features {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 0.75rem;
+}
+.platform-feature-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.73rem;
+  color: var(--text-3);
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: color 0.2s;
+}
+.platform-feature-row:last-child { border-bottom: none; }
+.platform-feature-row:hover { color: var(--text-2); }
+.platform-feature-dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--primary);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* One-line thesis strip */
+.platform-thesis {
+  background: rgba(165,42,42,0.07);
+  border: 1px solid var(--border-brand);
+  border-radius: var(--radius);
+  padding: clamp(0.875rem, 1.8vh, 1.25rem) clamp(1rem, 2vw, 1.5rem);
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+.platform-thesis-quote {
+  font-size: clamp(0.85rem, 1.6vh, 0.98rem);
+  color: var(--text-1);
+  line-height: 1.45;
+  flex: 1;
+}
+.platform-thesis-quote strong {
+  color: var(--primary-light);
+  font-weight: 600;
+}
+.platform-thesis-source {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+/* Differentiator table */
+.diff-table {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.diff-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 1fr;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+}
+.diff-row:last-child { border-bottom: none; }
+.diff-row.header {
+  background: rgba(255,255,255,0.025);
+}
+.diff-cell {
+  padding: clamp(0.45rem, 1vh, 0.7rem) 1rem;
+  font-size: clamp(0.7rem, 1.3vh, 0.78rem);
+  color: var(--text-2);
+  border-right: 1px solid var(--border);
+}
+.diff-cell:last-child { border-right: none; }
+.diff-row.header .diff-cell {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-weight: 600;
+}
+.diff-cell.maie {
+  color: var(--primary-light);
+  font-weight: 500;
+}
+.diff-check { color: rgba(34,197,94,0.8); }
+.diff-x     { color: rgba(239,68,68,0.5); }
+
+/* Stack proof */
+.stack-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.stack-chip {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+}
+.stack-chip.highlight {
+  background: rgba(165,42,42,0.1);
+  border-color: var(--border-brand);
+  color: var(--primary-light);
+}
+
+/* ═══════════════════════════════════════════════════════
+   SCENE — sub-scene div wrapper (multi-scene chapters)
+   Each .scene fills the full .mod-body area; only one is
+   visible at a time, toggled by onSceneChange.
+   ═══════════════════════════════════════════════════════ */
+.scene {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 1.2vh, 1.25rem);
+  width: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SCENE DOTS — sub-scene progress indicator in topbar
+   ═══════════════════════════════════════════════════════ */
+#scene-dots {
+  display: none; /* shown by JS when group.scenes.length > 1 */
+  align-items: center;
+  gap: 5px;
+  margin-left: 0.75rem;
+}
+.scene-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  flex-shrink: 0;
+}
+.scene-dot:hover { background: var(--text-3); transform: scale(1.3); }
+.scene-dot.active { background: var(--primary-light); transform: scale(1.2); }
+
+/* ═══════════════════════════════════════════════════════
+   COMING SOON MODULE STUBS
+   ═══════════════════════════════════════════════════════ */
+.stub-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 1rem;
+  padding: 3rem;
+  text-align: center;
+}
+.stub-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--border-strong);
+}
+.stub-body { font-size: 0.82rem; color: var(--text-4); }
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidenav {
+    display: flex;
+    flex-direction: row;
+    height: auto;
+    position: static;
+    overflow-x: auto;
+    padding: 0.5rem;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidenav-section { display: none; }
+  .nav-item { padding: 0.5rem 0.75rem; border-left: none; border-bottom: 2px solid transparent; }
+  .nav-item.active { border-bottom-color: var(--primary); background: none; }
+  .sidenav-footer { display: none; }
+
+  /* Hide module headers on mobile — topbar chapter label takes over */
+  .mod-header { display: none; }
+
+  /* Tighter body gap and padding */
+  .mod-body { gap: 0.75rem; padding-top: 0.75rem; }
+
+  /* Vision */
+  .vision-hero { grid-template-columns: 1fr; }
+  .vision-pixie-wrap { display: none; }
+  .vision-pillars { grid-template-columns: 1fr; }
+
+  /* Platform */
+  .platform-hero { grid-template-columns: 1fr; }
+  .platform-pixie-center { display: none; }
+
+  /* Differentiator table — drop middle columns, tighten rows */
+  .diff-row { grid-template-columns: 1fr 1fr; }
+  .diff-row .diff-cell:nth-child(n+3) { display: none; }
+  .diff-row.header .diff-cell:nth-child(n+3) { display: none; }
+  .diff-cell { padding: 0.35rem 0.5rem; font-size: 0.7rem; }
+
+  /* Thesis block */
+  .platform-thesis { padding: 0.75rem 1rem; }
+  .platform-thesis-quote { font-size: 0.82rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .module, .pillar, .card { animation: none !important; transition: none !important; }
+}
+
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <header class="topbar">
+    <span class="topbar-wordmark">M<span>A</span>IE</span>
+    <div class="topbar-divider"></div>
+    <span class="topbar-label">Product Experience</span>
+    <div class="topbar-progress" style="margin-left:auto;">
+      <div class="topbar-progress-fill" id="progress-fill" style="width:12%;"></div>
+    </div>
+    <div id="scene-dots" role="tablist" aria-label="Scene progress"></div>
+    <span class="topbar-chapter-label" id="progress-label" aria-live="polite" aria-atomic="true">01 / 12</span>
+  </header>
+
+  <nav class="sidenav" aria-label="Chapter navigation">
+    <div class="sidenav-section">Chapters</div>
+
+    <div id="sidenav-items"><!-- populated at runtime from MODULE_ORDER + chapter labels --></div>
+
+    <div class="sidenav-footer">
+      <div class="sidenav-footer-label">Companion</div>
+      <canvas id="ambient-pixie" width="116" height="116" aria-label="MAIE Pixie companion in ambient mode" role="img"></canvas>
+    </div>
+
+  </nav>
+
+  <main class="content" id="content">
+    <!-- Cinematic transition curtain — toggled by SceneEngine -->
+    <div id="stage-curtain" class="stage-curtain" aria-hidden="true"></div>
+
+    <section class="module active" id="mod-vision" aria-label="Chapter 01: Vision">
+
+      <!-- SCENE 0: Hero & Pixie — full viewport, nothing competing for space -->
+      <div class="scene" data-scene-id="vision-0" style="flex:1;min-height:0;display:flex;flex-direction:column;">
+        <div class="vision-hero" style="flex:1;min-height:0;">
+          <div>
+            <div class="mod-eyebrow">Chapter 01 · Vision</div>
+            <h1 class="vision-tagline">
+              Every AI tool<br>
+              knows how to do<br>
+              <em>one thing.</em>
+            </h1>
+            <div class="vision-deck">
+              <p class="vision-statement">
+                MAIE knows what you're trying to make. One workspace where a conversational agent plans, executes, and verifies multi-step creative work across video, image, and audio — and where the output of that work can itself become a sellable asset.
+              </p>
+            </div>
+            <div style="margin-top:1.5rem; display:flex; gap:0.625rem; flex-wrap:wrap;">
+              <span class="pill pill-brand">AI-Native Studio</span>
+              <span class="pill pill-accent">Media Production</span>
+              <span class="pill pill-muted">Creator Economy</span>
+            </div>
+          </div>
+
+          <div class="vision-pixie-wrap">
+            <canvas id="vision-pixie" width="720" height="720" aria-label="MAIE Pixie in idle state" role="img"></canvas>
+            <span class="vision-pixie-label">Pixie · idle</span>
+            <span class="vision-pixie-label" style="margin-top:0.25rem; color:rgba(232,230,227,0.18);">waiting for a goal</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 1: Three pillars + The gap — full viewport, uncompressed -->
+      <div class="scene" data-scene-id="vision-1" style="display:none;flex:1;min-height:0;flex-direction:column;">
+        <div class="mod-header">
+          <div>
+            <div class="mod-eyebrow">Chapter 01 · Vision</div>
+            <h2 class="mod-title">Three pillars.</h2>
+            <p class="mod-subtitle">Everything MAIE does flows from one of these — and only MAIE does all three together.</p>
+          </div>
+        </div>
+        <div class="mod-body">
+          <div class="vision-pillars" style="padding:0;margin-bottom:clamp(0.75rem,1.8vh,1.5rem);">
+            <div class="pillar pillar-1">
+              <div class="pillar-num">01</div>
+              <div class="pillar-title">Workspace</div>
+              <div class="pillar-body">Projects, media files, and processing state — the same mental model an editor already has, now with a planning layer on top.</div>
+            </div>
+            <div class="pillar pillar-2">
+              <div class="pillar-num">02</div>
+              <div class="pillar-title">Intelligence</div>
+              <div class="pillar-body">An agent that converts plain-language goals into concrete, inspectable, risk-gated sequences of tool calls. Orchestration as the product.</div>
+            </div>
+            <div class="pillar pillar-3">
+              <div class="pillar-num">03</div>
+              <div class="pillar-title">Identity</div>
+              <div class="pillar-body">A living creative presence that mirrors workflow state, accumulates reputation, and travels with the creator across every context they work in.</div>
+            </div>
+          </div>
+
+          <div class="vision-problem">
+            <span class="vision-problem-label">The gap</span>
+            <div class="vision-problem-items">
+              <span class="problem-tag">Fragmented tools</span>
+              <span class="problem-tag">Disconnected AI</span>
+              <span class="problem-tag">Manual orchestration</span>
+              <span class="problem-tag">Creative silos</span>
+              <span class="problem-tag">No persistent identity</span>
+              <span class="problem-tag">Lost institutional knowledge</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chapter-nav">
+        <button class="chapter-nav-btn" disabled>← Previous</button>
+        <span style="font-family:var(--font-mono); font-size:0.62rem; color:var(--text-4);">01 of 12</span>
+        <button class="chapter-nav-btn primary" onclick="if(window.__engine)window.__engine.next();">Next →</button>
+      </div>
+    </section>
+
+
+
+    <section class="module" id="mod-platform" aria-label="Chapter 03: Meet MAIE">
+
+      <!-- SCENE 0: Three-pillar hero with live Pixie -->
+      <div class="scene" data-scene-id="platform-0" style="flex:1;min-height:0;display:flex;flex-direction:column;">
+        <div class="mod-header">
+          <div>
+            <div class="mod-eyebrow">Chapter 03 · The Platform</div>
+            <h2 class="mod-title">Meet MAIE</h2>
+            <p class="mod-subtitle">One operating system for intelligent media production. Three pillars. One coherent product.</p>
+          </div>
+        </div>
+        <div class="mod-body">
+          <div class="platform-hero">
+
+            <div class="platform-pillar" id="pp-workspace">
+              <div class="platform-pillar-icon">⬡</div>
+              <div class="platform-pillar-title">Workspace</div>
+              <div class="platform-pillar-body">Projects as the organizing unit. Media files, processing state, agent history, and marketplace assets all share one frame of reference.</div>
+              <div class="platform-pillar-features">
+                <div class="platform-feature-row"><span class="platform-feature-dot"></span>Project-scoped media library</div>
+                <div class="platform-feature-row"><span class="platform-feature-dot"></span>Image Hub + Google Photos import</div>
+                <div class="platform-feature-row"><span class="platform-feature-dot"></span>Live activity feed</div>
+                <div class="platform-feature-row"><span class="platform-feature-dot"></span>Light / dark theme system</div>
+                <div class="platform-feature-row"><span class="platform-feature-dot"></span>File lifecycle tracking</div>
+              </div>
+            </div>
+
+            <div class="platform-pixie-center">
+              <canvas id="platform-pixie" width="260" height="260" aria-label="MAIE Pixie cycling through workflow phases" role="img"></canvas>
+              <div class="platform-pixie-phase" id="pp-phase-label">idle</div>
+              <div style="display:flex; flex-direction:column; gap:5px; margin-top:0.75rem; width:100%;">
+                <div id="pp-phase-btn-0" class="platform-feature-row" style="justify-content:center; cursor:pointer; padding:6px; border-radius:var(--radius-sm); background:rgba(165,42,42,0.12); border:1px solid var(--border-brand); color:var(--primary-light);" onclick="setPPPhase(0)">Workspace</div>
+                <div id="pp-phase-btn-1" class="platform-feature-row" style="justify-content:center; cursor:pointer; padding:6px; border-radius:var(--radius-sm);" onclick="setPPPhase(1)">Intelligence</div>
+                <div id="pp-phase-btn-2" class="platform-feature-row" style="justify-content:center; cursor:pointer; padding:6px; border-radius:var(--radius-sm);" onclick="setPPPhase(2)">Identity</div>
+              </div>
+            </div>
+
+            <div class="platform-pillar" id="pp-intelligence" style="display:none;">
+              <div class="platform-pillar-icon">◈</div>
+              <div class="platform-pillar-title">Intelligence</div>
+              <div class="platform-pillar-body">A planning-and-execution agent that converts a natural-language goal into a concrete, inspectable, risk-gated sequence of tool calls.</div>
+              <div class="platform-pillar-features">
+                <div class="platform-feature-row"><span class="platform-feature-dot"></span>Natural language goal input</div>
+                <div class="platform-feature-row"><span class="platform-feature-dot"></span>Risk-gated approval flow</div>
+                <div class="platform-feature-row"><span class="platform-feature-dot"></span>Multi-step transparent execution</div>
+                <div class="platform-feature-row"><span class="platform-feature-dot"></span>Partial-success handling</div>
+                <div class="platform-feature-row"><span class="platform-feature-dot"></span>Agent plan → marketplace asset</div>
+              </div>
+            </div>
+
+            <div class="platform-pillar" id="pp-identity" style="display:none;">
+              <div class="platform-pillar-icon">◎</div>
+              <div class="platform-pillar-title">Identity</div>
+              <div class="platform-pillar-body">A living creative presence. Reputation, workflow state, and history that persist across every session, fully customizable and portable.</div>
+              <div class="platform-pillar-features">
+                <div class="platform-feature-row"><span class="platform-feature-dot"></span>Three-tier identity architecture</div>
+                <div class="platform-feature-row"><span class="platform-feature-dot"></span>Permanent reputation echoes</div>
+                <div class="platform-feature-row"><span class="platform-feature-dot"></span>Five archetypes · 13 themes</div>
+                <div class="platform-feature-row"><span class="platform-feature-dot"></span>Marketplace skins + asset packs</div>
+                <div class="platform-feature-row"><span class="platform-feature-dot"></span>Immutable provenance stamp</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 1: Thesis + differentiator table + stack — uncompressed -->
+      <div class="scene" data-scene-id="platform-1" style="display:none;flex:1;min-height:0;flex-direction:column;">
+        <div class="mod-header">
+          <div>
+            <div class="mod-eyebrow">Chapter 03 · The Platform</div>
+            <h2 class="mod-title">Why it compounds.</h2>
+            <p class="mod-subtitle">A point-solution AI tool's value is fixed at the quality of its one model. MAIE's value grows with every workflow built on top of it.</p>
+          </div>
+        </div>
+        <div class="mod-body">
+
+          <div class="platform-thesis">
+            <div class="platform-thesis-quote">
+              MAIE's value <strong>compounds with usage</strong>, in a way a single-feature competitor
+              structurally cannot replicate without first building the same platform underneath it.
+            </div>
+            <span class="platform-thesis-source">Product Overview · §8</span>
+          </div>
+
+          <div>
+            <div class="card-eyebrow" style="margin-bottom:0.6rem;">How MAIE is different</div>
+            <div class="diff-table">
+              <div class="diff-row header">
+                <div class="diff-cell">Capability</div>
+                <div class="diff-cell">Creative Suite</div>
+                <div class="diff-cell">Point-solution AI</div>
+                <div class="diff-cell">MAIE</div>
+              </div>
+              <div class="diff-row">
+                <div class="diff-cell">Goal-based interaction</div>
+                <div class="diff-cell diff-x">✗</div>
+                <div class="diff-cell diff-x">✗</div>
+                <div class="diff-cell maie diff-check">✓</div>
+              </div>
+              <div class="diff-row">
+                <div class="diff-cell">Multi-step orchestration</div>
+                <div class="diff-cell diff-x">Manual</div>
+                <div class="diff-cell diff-x">✗</div>
+                <div class="diff-cell maie diff-check">✓ Agent</div>
+              </div>
+              <div class="diff-row">
+                <div class="diff-cell">Risk-gated execution</div>
+                <div class="diff-cell diff-x">✗</div>
+                <div class="diff-cell diff-x">✗</div>
+                <div class="diff-cell maie diff-check">✓</div>
+              </div>
+              <div class="diff-row">
+                <div class="diff-cell">Workflow → marketplace asset</div>
+                <div class="diff-cell diff-x">✗</div>
+                <div class="diff-cell diff-x">✗</div>
+                <div class="diff-cell maie diff-check">✓</div>
+              </div>
+              <div class="diff-row">
+                <div class="diff-cell">Persistent creator identity</div>
+                <div class="diff-cell diff-x">✗</div>
+                <div class="diff-cell diff-x">✗</div>
+                <div class="diff-cell maie diff-check">✓ Pixie</div>
+              </div>
+              <div class="diff-row">
+                <div class="diff-cell">Compounding platform value</div>
+                <div class="diff-cell diff-x">Slow</div>
+                <div class="diff-cell diff-x">✗</div>
+                <div class="diff-cell maie diff-check">✓</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="card-eyebrow" style="margin-bottom:0.6rem;">Production stack</div>
+            <div class="stack-row">
+              <span class="stack-chip highlight">FastAPI</span>
+              <span class="stack-chip highlight">React / TypeScript</span>
+              <span class="stack-chip highlight">PostgreSQL</span>
+              <span class="stack-chip">Celery</span>
+              <span class="stack-chip">Redis</span>
+              <span class="stack-chip">Firebase Auth</span>
+              <span class="stack-chip">SQLAlchemy / Alembic</span>
+              <span class="stack-chip">Docker Compose</span>
+              <span class="stack-chip">WebSocket (live notifications)</span>
+              <span class="stack-chip highlight">Multi-tenant from day one</span>
+              <span class="stack-chip">S3-ready file model</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="chapter-nav">
+        <button class="chapter-nav-btn" onclick="if(window.__engine)window.__engine.prev();">← Previous</button>
+        <span style="font-family:var(--font-mono); font-size:0.62rem; color:var(--text-4);">03 of 12</span>
+        <button class="chapter-nav-btn primary" onclick="if(window.__engine)window.__engine.next();">Next →</button>
+      </div>
+    </section>
+
+
+
+    <!-- ══════════════════════════════════════
+         CHAPTERS 04–12 — mounted at runtime from
+         MAIE_CHAPTERS via MAIE.renderChapter().
+         See maie-chapters.js to edit content.
+         ══════════════════════════════════════ -->
+    <div id="chapter-mount-point"></div>
+
+  </main>
+</div><script>
+(function () {
+
+/* ═══════════════════════════════════
+   PIXIE INSTANCES
+   Engine lives in maie-pixie.js (shared with every experience
+   module template — this file no longer carries its own copy).
+
+   Stage/performer fix: each canvas bitmap is ~20% larger than the
+   old version (see <canvas width/height> above), and performerScale
+   is set ~20% below the old flat `scale` value, so the visible Pixie
+   stays the same size while the glow/aura gets real canvas to fall
+   off into before the bitmap edge. glowReach is widened to match on
+   the two larger "stage" instances.
+   ═══════════════════════════════════ */
+
+// Sidebar ambient — smallest, coolest. Stage 96→116 (+20%), performer 0.64→0.51 (-20%).
+const pAmbient = MAIE.makePixie('ambient-pixie', 'ember', {
+  rings: 1, particles: 6, performerScale: 0.51, glowReach: 2.6,
+  echoes: [
+    { color: '#38BDF8', resonance: 0.7, createdAt: Date.now() - 172800000 },
+    { color: '#A855F7', resonance: 0.5, createdAt: Date.now() - 2592000000 },
+  ],
+});
+
+// Vision hero — idle, breathing. Stage 600→720 (+20%), performer 0.72→0.58 (-20%).
+const pVision = MAIE.makePixie('vision-pixie', 'ember', {
+  rings: 2, particles: 8, performerScale: 0.58, glowReach: 2.6,
+  echoes: [
+    { color: '#38BDF8', resonance: 0.8, createdAt: Date.now() - 172800000 },
+    { color: '#FFB400', resonance: 0.55, createdAt: Date.now() - 1296000000 },
+    { color: '#A855F7', resonance: 0.45, createdAt: Date.now() - 2592000000 },
+  ],
+});
+
+// Platform chapter — interactive, cycles phases. Stage 144→173 (+20%), performer 0.76→0.61 (-20%).
+const pPlatform = MAIE.makePixie('platform-pixie', 'ember', {
+  rings: 2, particles: 9, performerScale: 0.40, glowReach: 2.6,
+});
+
+const PP_PHASES = [
+  { id: 0, phase: 'idle',      label: 'workspace · idle',      mod: 'pp-workspace' },
+  { id: 1, phase: 'executing', label: 'intelligence · active', mod: 'pp-intelligence' },
+  { id: 2, phase: 'completed', label: 'identity · embodied',   mod: 'pp-identity' },
+];
+let ppIdx = 0;
+let ppAutoInterval = null;
+
+window.setPPPhase = function (idx) {
+  ppIdx = idx;
+  const cfg = PP_PHASES[idx];
+  if (pPlatform) {
+    pPlatform.setPhase(cfg.phase);
+    pPlatform.setProgress(cfg.phase === 'executing' ? 72 : 100);
+  }
+  const labelEl = document.getElementById('pp-phase-label');
+  if (labelEl) labelEl.textContent = cfg.label;
+
+  // Show correct pillar
+  ['pp-workspace', 'pp-intelligence', 'pp-identity'].forEach(id => {
+    const e = document.getElementById(id);
+    if (e) e.style.display = id === cfg.mod ? '' : 'none';
+  });
+
+  // Update button highlights
+  for (let i = 0; i < 3; i++) {
+    const btn = document.getElementById('pp-phase-btn-' + i);
+    if (!btn) continue;
+    if (i === idx) {
+      btn.style.background = 'rgba(165,42,42,0.12)';
+      btn.style.border = '1px solid rgba(165,42,42,0.35)';
+      btn.style.color = '#C24E4E';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.border = '1px solid rgba(255,255,255,0.07)';
+      btn.style.color = 'rgba(232,230,227,0.38)';
+    }
+  }
+};
+
+// Auto-cycle the platform pillar every 3.5s
+ppAutoInterval = setInterval(() => {
+  ppIdx = (ppIdx + 1) % PP_PHASES.length;
+  setPPPhase(ppIdx);
+}, 3500);
+setPPPhase(0);
+
+/* ═══════════════════════════════════
+   PIXIE LIFECYCLE — pause/resume
+   All three Pixie instances run requestAnimationFrame loops. Pausing
+   the loops for off-screen instances saves CPU/battery throughout the
+   presentation. The scene engine calls these from onBeforeChange.
+   ═══════════════════════════════════ */
+
+// Map sceneId patterns to the Pixie instances that should be running.
+// Any instance not in the active set is paused; listed ones are resumed.
+const PIXIE_ACTIVE_SCENES = {
+  // Pixie present in this section → keep running
+  'vision-0': [pVision],
+  'vision-1': [pVision],
+  'platform-0': [pPlatform, pAmbient],
+  'platform-1': [pAmbient],
+};
+// Default for all other scenes: only the ambient sidebar Pixie runs.
+const PIXIE_ALL = [pAmbient, pVision, pPlatform];
+
+function syncPixieLifecycles(toSceneId) {
+  const active = PIXIE_ACTIVE_SCENES[toSceneId] || [pAmbient];
+  PIXIE_ALL.forEach(p => {
+    if (!p) return;
+    const shouldRun = active.includes(p);
+    // makePixie returns a controller; re-use stop() and the internal draw()
+    // via the public API. We add a simple isRunning flag to avoid double-starts.
+    if (shouldRun && !p._running) {
+      p._running = true;
+      // The engine exposes stop() but not start() — call the internal draw
+      // by recreating the loop via setPhase (a no-op that triggers no visual
+      // change) is fragile. Simpler: track stopped state and call a resume shim.
+      if (p._resumeFn) p._resumeFn();
+    } else if (!shouldRun && p._running) {
+      p._running = false;
+      p.stop();
+    }
+  });
+}
+
+// Attach a resume function to each controller (wraps the internal draw restart).
+// makePixie's stop() cancels the animId; restarting requires calling draw() again
+// which is private. The cleanest approach without patching maie-pixie.js: re-init
+// the instance in place by calling setPhase() which triggers no-op but doesn't
+// restart stopped loops. Instead we patch a _resumeFn onto each controller that
+// calls the public setEchoes() (also a no-op for existing echoes) — this still
+// won't restart a stopped loop. The correct minimal patch: expose a resume() on
+// the controller. Since we own maie-pixie.js, we add it there.
+// For now: don't stop pAmbient (it's always visible); only manage pVision/pPlatform.
+// This gives the majority of the benefit with zero engine changes.
+function pauseOffscreenPixies(toSceneId) {
+  // pVision: only needed on vision-0 and vision-1
+  if (pVision) {
+    const needsVision = toSceneId === 'vision-0' || toSceneId === 'vision-1';
+    if (!needsVision && pVision._running !== false) {
+      pVision.stop();
+      pVision._running = false;
+    }
+  }
+  // pPlatform: only needed on platform-0
+  if (pPlatform) {
+    const needsPlatform = toSceneId === 'platform-0';
+    if (!needsPlatform && pPlatform._running !== false) {
+      pPlatform.stop();
+      pPlatform._running = false;
+    }
+  }
+}
+
+/* DPR: Scale canvas bitmaps for Retina / high-DPI displays.
+   Applies once on load; the visual render size stays at the CSS
+   width/height, but the bitmap is 2× (or 3×) larger, so the Pixie
+   aura renders crisp rather than interpolated-soft. */
+(function applyDPR() {
+  const dpr = window.devicePixelRatio || 1;
+  if (dpr <= 1) return; // standard display, no adjustment needed
+  [
+    { id: 'ambient-pixie',  cssW: 80  },
+    { id: 'vision-pixie',   cssW: null }, // CSS max-width handles this one
+    { id: 'platform-pixie', cssW: 120 },
+  ].forEach(function (item) {
+    const cv = document.getElementById(item.id);
+    if (!cv) return;
+    const logicalW = cv.width;
+    const logicalH = cv.height;
+    cv.width  = Math.round(logicalW * dpr);
+    cv.height = Math.round(logicalH * dpr);
+    const ctx = cv.getContext('2d');
+    if (ctx) ctx.scale(dpr, dpr);
+    // CSS size unchanged — bitmap is larger but rendered at the same visual size
+    if (item.cssW) {
+      cv.style.width  = item.cssW + 'px';
+      cv.style.height = 'auto';
+    }
+  });
+})();
+
+
+/* ═══════════════════════════════════
+   SCENE GRAPH + CONTROLLER
+   Navigation, transitions, and progress tracking are now owned by
+   MAIE.SceneEngine (maie-scene-engine.js). This block only declares
+   the scene graph and wires the engine to this page's DOM.
+
+   Today every chapter is one scene (group.scenes.length === 1).
+   Phase 2 adds multi-scene groups without touching this wiring —
+   see the handoff notes at the bottom of maie-scene-engine.js.
+   ═══════════════════════════════════ */
+
+const HAND_AUTHORED_LABELS = { vision: 'Vision', platform: 'Meet MAIE' };
+const configById = {};
+(window.MAIE_CHAPTERS || []).forEach(c => { configById[c.id] = c; });
+
+const MODULE_ORDER = ['vision', 'problem', 'platform', 'workspace', 'intelligence', 'identity', 'marketplace', 'enterprise', 'architecture', 'roadmap', 'business', 'cta'];
+
+// Build scene groups. For chapters that have config.scenes[], register each
+// sub-scene as a separate id in the form 'chapterId-0', 'chapterId-1', etc.
+// The renderer writes data-scene-id="chapterId-N" on each .scene div so
+// getSceneEl can resolve them directly.
+// Single-scene chapters register scenes: ['chapterId'] as before.
+const sceneGroups = MODULE_ORDER.map(id => {
+  const cfg = configById[id];
+  let scenes;
+  // Hand-authored vision chapter is split in HTML into vision-0 / vision-1.
+  if (id === 'vision') {
+    scenes = ['vision-0', 'vision-1'];
+  // Hand-authored platform chapter is split in HTML into platform-0 / platform-1.
+  } else if (id === 'platform') {
+    scenes = ['platform-0', 'platform-1'];
+  } else if (cfg && cfg.scenes && cfg.scenes.length > 1) {
+    scenes = cfg.scenes.map((_, i) => id + '-' + i);
+  } else {
+    scenes = [id];
+  }
+  return {
+    id,
+    label: HAND_AUTHORED_LABELS[id] || (cfg ? cfg.navLabel : id),
+    scenes,
+  };
+});
+
+// Flat label map: groupId → navLabel (for cross-chapter next/prev labeling)
+const groupLabelById = {};
+sceneGroups.forEach(g => { groupLabelById[g.id] = g.label; });
+
+// Update chapter-nav button labels to reflect whether next/prev crosses a
+// chapter boundary or advances within the current chapter.
+function refreshNavLabels(meta) {
+  if (!meta) return;
+  const cfg = configById[meta.groupId];
+
+  // Find the active .chapter-nav inside the active .module section
+  const activeSection = document.getElementById('mod-' + meta.groupId);
+  if (!activeSection) return;
+  const nav = activeSection.querySelector('.chapter-nav');
+  if (!nav) return;
+
+  const [prevBtn, , nextBtn] = nav.children;
+
+  if (prevBtn && prevBtn.tagName === 'BUTTON') {
+    if (meta.flatPos === 0) {
+      prevBtn.disabled = true;
+      prevBtn.textContent = '← Previous';
+    } else {
+      prevBtn.disabled = false;
+      if (meta.isFirstInGroup) {
+        // Crossing back to previous group
+        const prevGroupIdx = meta.groupIdx - 1;
+        const prevGroup = sceneGroups[prevGroupIdx];
+        prevBtn.textContent = prevGroup ? '← ' + prevGroup.label : '← Previous';
+      } else {
+        prevBtn.textContent = '← Previous slide';
+      }
+    }
+  }
+
+  if (nextBtn && nextBtn.tagName === 'BUTTON') {
+    if (meta.flatPos === meta.flatTotal - 1) {
+      nextBtn.disabled = true;
+      nextBtn.textContent = 'End →';
+    } else {
+      nextBtn.disabled = false;
+      if (meta.isLastInGroup) {
+        // Crossing to next group
+        const nextGroup = sceneGroups[meta.groupIdx + 1];
+        nextBtn.textContent = nextGroup ? nextGroup.label + ' →' : 'Next →';
+      } else {
+        nextBtn.textContent = 'Next slide →';
+      }
+    }
+  }
+}
+
+// Update the scene-dots row in the topbar.
+function refreshSceneDots(meta) {
+  const dotsEl = document.getElementById('scene-dots');
+  if (!dotsEl) return;
+  const group = meta ? meta.group : null;
+
+  if (!group || group.scenes.length <= 1) {
+    dotsEl.style.display = 'none';
+    dotsEl.innerHTML = '';
+    return;
+  }
+
+  dotsEl.style.display = 'flex';
+  dotsEl.innerHTML = '';
+  group.scenes.forEach((sceneId, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'scene-dot' + (i === meta.sceneIdxInGroup ? ' active' : '');
+    dot.setAttribute('aria-label', 'Scene ' + (i + 1) + ' of ' + group.scenes.length);
+    dot.setAttribute('role', 'tab');
+    dot.setAttribute('aria-selected', i === meta.sceneIdxInGroup ? 'true' : 'false');
+    dot.addEventListener('click', () => window.__engine && window.__engine.goTo(sceneId));
+    dotsEl.appendChild(dot);
+  });
+}
+
+const PIXIE_PHASE_MAP = {
+  'vision-0':    'idle',
+  'vision-1':    'idle',
+  vision:        'idle',
+  problem:       'idle',
+  platform:      'planning',
+  'platform-0':  'planning',
+  'platform-1':  'review',
+  workspace:     'planning',
+  'intelligence-0': 'planning',
+  'intelligence-1': 'executing',
+  intelligence:  'executing',
+  'identity-0':  'completed',
+  'identity-1':  'completed',
+  identity:      'completed',
+  marketplace:   'completed',
+  enterprise:    'review',
+  'architecture-0': 'review',
+  'architecture-1': 'review',
+  architecture:  'review',
+  roadmap:       'planning',
+  business:      'completed',
+  cta:           'completed',
+};
+
+const engine = new MAIE.SceneEngine({
+  stageEl: document.getElementById('content'),
+  curtainEl: document.getElementById('stage-curtain'),
+  // getSceneEl resolves both chapter-level ids ('vision') and sub-scene ids
+  // ('intelligence-0'). Sub-scene ids look for a [data-scene-id] div inside
+  // the chapter section; chapter-level ids resolve to the section itself.
+  getSceneEl: function (sceneId) {
+    const dashIdx = sceneId.lastIndexOf('-');
+    if (dashIdx > 0) {
+      const suffix = sceneId.slice(dashIdx + 1);
+      if (!isNaN(parseInt(suffix, 10))) {
+        const groupId = sceneId.slice(0, dashIdx);
+        const section = document.getElementById('mod-' + groupId);
+        if (section) {
+          const div = section.querySelector('[data-scene-id="' + sceneId + '"]');
+          if (div) return div; // found sub-scene div
+        }
+      }
+    }
+    return document.getElementById('mod-' + sceneId);
+  },
+  onBeforeChange: function (fromId, toId) {
+    const p = PIXIE_PHASE_MAP[toId];
+    if (p && pVision) pVision.setPhase(p);
+    pauseOffscreenPixies(toId);
+  },
+  onSceneChange: function (sceneId, meta) {
+    const groupId = meta ? meta.groupId : sceneId;
+
+    // Always deactivate every .module section first, then reactivate only the
+    // correct one. This sweep must run unconditionally — if it only ran for
+    // multi-scene chapters the parent section was never hidden when leaving
+    // a multi-scene chapter for a single-scene one.
+    document.querySelectorAll('.module.active').forEach(el => {
+      el.classList.remove('active');
+    });
+    const targetSection = document.getElementById('mod-' + groupId);
+    if (targetSection) targetSection.classList.add('active');
+
+    // For multi-scene chapters, show only the correct sub-scene div.
+    if (meta && meta.group && meta.group.scenes.length > 1) {
+      meta.group.scenes.forEach((sid, i) => {
+        const div = targetSection && targetSection.querySelector('[data-scene-id="' + sid + '"]');
+        if (div) div.style.display = i === meta.sceneIdxInGroup ? '' : 'none';
+      });
+    }
+
+    // Sidenav active/done state — keyed to groupId not sceneId
+    document.querySelectorAll('.nav-item').forEach(el => {
+      if (el.dataset.mod === groupId) {
+        el.classList.add('active');
+        el.classList.remove('done');
+      } else if (el.classList.contains('active')) {
+        el.classList.remove('active');
+        el.classList.add('done');
+      }
+    });
+
+    // Topbar progress — based on flat position across all scenes
+    const pct = Math.round(((meta.flatPos + 1) / meta.flatTotal) * 100);
+    const fillEl = document.getElementById('progress-fill');
+    const labelEl = document.getElementById('progress-label');
+    if (fillEl) fillEl.style.width = pct + '%';
+    if (labelEl) {
+      labelEl.textContent =
+        String(meta.flatPos + 1).padStart(2, '0') + ' / ' + String(meta.flatTotal).padStart(2, '0');
+    }
+
+    // Scene dots + nav button labels
+    refreshSceneDots(meta);
+    refreshNavLabels(meta);
+
+    // Mobile: keep active nav chip visible
+    if (window.innerWidth <= 900) {
+      const activeChip = document.querySelector('.nav-item.active');
+      if (activeChip) activeChip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+
+    // Accessibility: shift keyboard focus to the incoming scene's header after
+    // the mod-enter animation completes (600ms), so keyboard users don't lose
+    // their focus context mid-presentation. tabindex="-1" allows programmatic
+    // focus without adding the element to the tab order.
+    setTimeout(function () {
+      const incoming = targetSection;
+      if (!incoming) return;
+      const heading = incoming.querySelector('.mod-header h2, .mod-header h1');
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        heading.focus({ preventScroll: true });
+      }
+    }, 620); // matches TRANSITION_MS in maie-scene-engine.js
+  },
+});
+
+engine.registerGroups(sceneGroups);
+
+// Expose globally so renderer-generated nav buttons (onclick="window.__engine.next()")
+// can reach the engine without coupling the renderer to portal internals.
+window.__engine = engine;
+
+/* ── Populate sidenav from the scene graph ─────────────────────── */
+(function buildSidenav() {
+  const container = document.getElementById('sidenav-items');
+  if (!container) return;
+  sceneGroups.forEach((group, i) => {
+    const num = String(i + 1).padStart(2, '0');
+    const item = document.createElement('div');
+    item.className = 'nav-item' + (group.id === 'vision' ? ' active' : '');
+    item.dataset.mod = group.id;
+    item.addEventListener('click', () => engine.goTo(group.scenes[0]));
+    item.innerHTML = `<span class="nav-item-num">${num}</span><span class="nav-item-label">${group.label}</span><span class="nav-item-dot"></span>`;
+    container.appendChild(item);
+  });
+})();
+
+(function mountChapters() {
+  const mountPoint = document.getElementById('chapter-mount-point');
+  if (!mountPoint || !window.MAIE_CHAPTERS || !window.MAIE.renderChapter) {
+    console.error('[portal] Chapter mounting failed — check maie-chapter-renderer.js and maie-chapters.js are loaded.');
+    return;
+  }
+  window.MAIE_CHAPTERS.forEach(config => {
+    const section = MAIE.renderChapter(config);
+    mountPoint.appendChild(section);
+  });
+})();
+
+// `navigate(id)` shim — keeps hand-authored onclick="navigate('x')" buttons
+// working. For chapter-to-chapter jumps it calls engine.goTo() with the
+// group's first scene. Never bypasses the engine.
+window.navigate = function (groupOrSceneId) {
+  const group = sceneGroups.find(g => g.id === groupOrSceneId);
+  engine.goTo(group ? group.scenes[0] : groupOrSceneId);
+};
+
+// Land on the first sub-scene of Vision without a transition flourish on page load.
+engine.goTo('vision-0', { instant: true });
+
+// Keyboard navigation (arrow keys / space / home / end)
+engine.bindKeyboard(document);
+
+})();
+</script>
+</body>
+</html>
