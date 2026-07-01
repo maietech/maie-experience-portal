@@ -1,0 +1,631 @@
+
+<style>
+  :root {
+    --pc-bg: #0d0d10;
+    --pc-surface: #13131a;
+    --pc-border: rgba(255,255,255,0.08);
+    --pc-text: #e8e6f0;
+    --pc-muted: #8a879a;
+  }
+
+  .pc-root { font-family: var(--font-sans); color: var(--text-primary); }
+
+  /* Hero */
+  .pc-hero {
+    background: var(--pc-bg);
+    border-radius: 16px;
+    padding: 2.5rem 2rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .pc-hero::before {
+    content:'';
+    position:absolute;
+    inset:0;
+    background: radial-gradient(ellipse 60% 80% at 15% 50%, rgba(126,34,206,0.18) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 60% at 85% 20%, rgba(59,130,246,0.10) 0%, transparent 60%);
+    pointer-events:none;
+  }
+  .pc-canvas-wrap { flex-shrink:0; position:relative; z-index:1; }
+  .pc-hero-text { flex:1; position:relative; z-index:1; }
+  .pc-tag {
+    display:inline-block;
+    font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+    color: #a855f7; border: 0.5px solid rgba(168,85,247,.4);
+    border-radius:4px; padding:3px 8px; margin-bottom:.75rem; font-weight:500;
+  }
+  .pc-hero-title { font-size:22px; font-weight:500; color:#f1eeff; margin:0 0 .5rem; line-height:1.25; }
+  .pc-hero-sub { font-size:14px; color: #9e9bb5; line-height:1.6; margin:0; max-width:440px; }
+
+  /* Archetype grid */
+  .pc-section-label {
+    font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color: var(--text-muted); margin: 0 0 .75rem; font-weight:500;
+  }
+  .pc-arch-grid {
+    display:grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap:8px;
+    margin-bottom:1.5rem;
+  }
+  .pc-arch-card {
+    background: var(--surface-1);
+    border: 0.5px solid var(--border);
+    border-radius:10px;
+    padding:.75rem .5rem;
+    text-align:center;
+    cursor:pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .pc-arch-card:hover, .pc-arch-card.active {
+    border-color: var(--border-accent);
+    background: var(--bg-accent);
+  }
+  .pc-arch-card.active { border-width: 1px; }
+  .pc-arch-name { font-size:13px; font-weight:500; color: var(--text-primary); margin: .4rem 0 .1rem; }
+  .pc-arch-role { font-size:11px; color: var(--text-muted); }
+  .pc-arch-anim { font-size:10px; color: var(--text-secondary); margin-top:.2rem; }
+  .pc-arch-dot {
+    width:28px; height:28px; border-radius:50%; margin:0 auto .3rem;
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px;
+  }
+
+  /* Three-tier architecture */
+  .pc-tiers {
+    display:grid; grid-template-columns:1fr 1fr 1fr;
+    gap:10px; margin-bottom:1.5rem;
+  }
+  .pc-tier {
+    border-radius:12px; padding:1rem;
+    border: 0.5px solid var(--border);
+  }
+  .pc-tier-num { font-size:11px; font-weight:500; letter-spacing:.06em; margin-bottom:.35rem; }
+  .pc-tier-title { font-size:14px; font-weight:500; color: var(--text-primary); margin-bottom:.3rem; }
+  .pc-tier-desc { font-size:12px; color: var(--text-secondary); line-height:1.55; }
+  .pc-tier-attrs { margin-top:.6rem; display:flex; flex-wrap:wrap; gap:4px; }
+  .pc-attr {
+    font-size:10px; border-radius:4px; padding:2px 6px;
+    border: 0.5px solid var(--border); color: var(--text-secondary);
+  }
+
+  /* Runtime state strip */
+  .pc-runtime {
+    background: var(--surface-1);
+    border-radius:12px; padding:1rem 1.25rem;
+    margin-bottom:1.5rem;
+    border: 0.5px solid var(--border);
+  }
+  .pc-rt-row {
+    display:grid; grid-template-columns: repeat(6, 1fr);
+    gap:6px; margin-top:.6rem;
+  }
+  .pc-phase {
+    border-radius:8px; padding:.5rem .25rem;
+    text-align:center; font-size:11px;
+    border: 0.5px solid var(--border);
+    color: var(--text-secondary);
+    background: var(--surface-0);
+  }
+  .pc-phase.pc-active {
+    background: var(--bg-accent); border-color: var(--border-accent);
+    color: var(--text-accent); font-weight:500;
+  }
+  .pc-phase-mode { font-size:9px; color: var(--text-muted); margin-top:2px; }
+
+  /* Export capabilities */
+  .pc-export-row {
+    display:grid; grid-template-columns: repeat(4, 1fr);
+    gap:8px; margin-bottom:1.5rem;
+  }
+  .pc-export-card {
+    border-radius:10px; padding:.75rem;
+    border: 0.5px solid var(--border);
+    background: var(--surface-1);
+  }
+  .pc-export-icon { font-size:18px; margin-bottom:.35rem; color: var(--text-secondary); }
+  .pc-export-title { font-size:12px; font-weight:500; color: var(--text-primary); margin-bottom:.2rem; }
+  .pc-export-desc { font-size:11px; color: var(--text-muted); line-height:1.4; }
+
+  /* Canvas for live pixie */
+  #live-pixie-canvas { display:block; }
+
+  /* Sticky phase selector */
+  .pc-phase-sel {
+    display:flex; gap:6px; margin-top:.5rem; flex-wrap:wrap;
+  }
+  .pc-phase-btn {
+    font-size:11px; padding:4px 10px; border-radius:6px;
+    border: 0.5px solid var(--border); background:transparent;
+    color: var(--text-secondary); cursor:pointer; font-family:var(--font-sans);
+    transition: background .12s, border-color .12s, color .12s;
+  }
+  .pc-phase-btn:hover { background: var(--surface-1); border-color: var(--border-strong); }
+  .pc-phase-btn.on { background: var(--bg-accent); border-color: var(--border-accent); color: var(--text-accent); }
+
+  .pc-theme-row { display:flex; gap:5px; flex-wrap:wrap; margin-top:.5rem; }
+  .pc-theme-dot {
+    width:20px; height:20px; border-radius:50%; cursor:pointer;
+    border:2px solid transparent; transition:border-color .12s;
+    flex-shrink:0;
+  }
+  .pc-theme-dot.on { border-color: var(--border-accent); }
+
+  .pc-two-col { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:1.5rem; }
+  .pc-infobox {
+    background: var(--surface-1); border-radius:12px;
+    padding:1rem 1.1rem; border:0.5px solid var(--border);
+  }
+  .pc-infobox-title { font-size:13px; font-weight:500; margin-bottom:.5rem; color: var(--text-primary); }
+  .pc-infobox-row { display:flex; justify-content:space-between; align-items:baseline; padding:4px 0; border-bottom:0.5px solid var(--border); }
+  .pc-infobox-row:last-child { border-bottom:none; }
+  .pc-infobox-key { font-size:12px; color: var(--text-secondary); }
+  .pc-infobox-val { font-size:12px; font-weight:500; color: var(--text-primary); }
+
+  .pc-echo-legend { display:flex; gap:10px; flex-wrap:wrap; margin-top:.5rem; }
+  .pc-echo-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-secondary); }
+  .pc-echo-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+</style>
+
+<div class="pc-root" role="main">
+  <h2 class="sr-only">Pixie Companion Framework — Product Overview for MAIE</h2>
+
+  <!-- ── HERO ── -->
+  <div class="pc-hero">
+    <div class="pc-canvas-wrap">
+      <canvas id="live-pixie-canvas" width="130" height="130" aria-label="Live Pixie companion animation" role="img"></canvas>
+    </div>
+    <div class="pc-hero-text">
+      <div class="pc-tag">MAIE · Identity Framework · Tier 2</div>
+      <h3 class="pc-hero-title">The Pixie Companion</h3>
+      <p class="pc-hero-sub">A living, responsive avatar that is the face of every user's MAIE experience. Not a decoration — a real-time mirror of identity, workflow state, and earned reputation, fully customizable and portable across contexts.</p>
+      <div style="margin-top:1rem;">
+        <div class="pc-section-label" style="margin-bottom:.4rem">Live phase →</div>
+        <div class="pc-phase-sel" id="phase-sel">
+          <button class="pc-phase-btn on" data-phase="idle">idle</button>
+          <button class="pc-phase-btn" data-phase="planning">planning</button>
+          <button class="pc-phase-btn" data-phase="executing">executing</button>
+          <button class="pc-phase-btn" data-phase="completed">completed</button>
+          <button class="pc-phase-btn" data-phase="failed">failed</button>
+        </div>
+        <div style="margin-top:.6rem;">
+          <div class="pc-section-label" style="margin-bottom:.4rem">Theme →</div>
+          <div class="pc-theme-row" id="theme-row"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── THREE-TIER ARCHITECTURE ── -->
+  <div class="pc-section-label">Three-tier identity architecture</div>
+  <div class="pc-tiers">
+    <div class="pc-tier" style="background: var(--bg-pro); border-color: var(--border-pro);">
+      <div class="pc-tier-num" style="color:var(--text-pro)">Tier 1</div>
+      <div class="pc-tier-title">UserIdentity</div>
+      <div class="pc-tier-desc">Immutable provenance layer. Owns the identity glyph and stamps all creator assets. Never altered by cosmetic changes.</div>
+      <div class="pc-tier-attrs">
+        <span class="pc-attr">identity_id</span>
+        <span class="pc-attr">glyph seed</span>
+        <span class="pc-attr">provenance</span>
+      </div>
+    </div>
+    <div class="pc-tier" style="background: var(--bg-accent); border-color: var(--border-accent);">
+      <div class="pc-tier-num" style="color:var(--text-accent)">Tier 2</div>
+      <div class="pc-tier-title">PixieCompanion ← you are here</div>
+      <div class="pc-tier-desc">Visual and behavioral companion. Carries the identity glyph but is fully replaceable. Changing archetype, theme, or skin never touches Tier 1.</div>
+      <div class="pc-tier-attrs">
+        <span class="pc-attr">archetype</span>
+        <span class="pc-attr">theme_id</span>
+        <span class="pc-attr">pixie_name</span>
+        <span class="pc-attr">preferences</span>
+        <span class="pc-attr">asset_id</span>
+      </div>
+    </div>
+    <div class="pc-tier" style="background: var(--bg-success); border-color: var(--border-success);">
+      <div class="pc-tier-num" style="color:var(--text-success)">Tier 3</div>
+      <div class="pc-tier-title">Runtime State</div>
+      <div class="pc-tier-desc">Ephemeral phase layer. Never persisted. Driven live from AgentWorkflowPanel callbacks — phase, mode, progress, and temperament.</div>
+      <div class="pc-tier-attrs">
+        <span class="pc-attr">phase</span>
+        <span class="pc-attr">mode</span>
+        <span class="pc-attr">progress %</span>
+        <span class="pc-attr">temperament</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ARCHETYPES ── -->
+  <div class="pc-section-label">The five archetypes</div>
+  <div class="pc-arch-grid" id="arch-grid">
+  </div>
+
+  <!-- ── RUNTIME PHASES ── -->
+  <div class="pc-runtime">
+    <div class="pc-section-label" style="margin:0">Workflow phase → animation mode mapping</div>
+    <div class="pc-rt-row">
+      <div class="pc-phase" id="rt-idle"><div>idle</div><div class="pc-phase-mode">ambient</div></div>
+      <div class="pc-phase" id="rt-planning"><div>planning</div><div class="pc-phase-mode">tools</div></div>
+      <div class="pc-phase" id="rt-review"><div>review</div><div class="pc-phase-mode">tools</div></div>
+      <div class="pc-phase" id="rt-executing"><div>executing</div><div class="pc-phase-mode">active + progress ring</div></div>
+      <div class="pc-phase" id="rt-completed"><div>completed</div><div class="pc-phase-mode">active → ambient</div></div>
+      <div class="pc-phase" id="rt-failed"><div>failed</div><div class="pc-phase-mode">ambient / subdued</div></div>
+    </div>
+  </div>
+
+  <!-- ── TWO-COL INFO ── -->
+  <div class="pc-two-col">
+    <div class="pc-infobox">
+      <div class="pc-infobox-title">Persistence model</div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">Table</span><span class="pc-infobox-val">pixie_companions</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">Preferences storage</span><span class="pc-infobox-val">JSONB (no migration per dim.)</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">Preference merge</span><span class="pc-infobox-val">Archetype defaults + user overrides</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">Cache</span><span class="pc-infobox-val">localStorage (maie_pixie_{userId})</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">Optimistic updates</span><span class="pc-infobox-val">Yes — auto rollback on failure</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">Runtime state</span><span class="pc-infobox-val">Never persisted</span></div>
+    </div>
+    <div class="pc-infobox">
+      <div class="pc-infobox-title">Customization dimensions (free tier)</div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">Archetype</span><span class="pc-infobox-val">5 options</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">Color theme</span><span class="pc-infobox-val">13 built-in palettes</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">Animation style</span><span class="pc-infobox-val">orbit / wave / pulse / neural / static</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">Core shape</span><span class="pc-infobox-val">circle / hexagon / diamond / shield</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">Particle density</span><span class="pc-infobox-val">sparse / normal / dense</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">Ring count</span><span class="pc-infobox-val">1 / 2 / 3</span></div>
+    </div>
+  </div>
+
+  <!-- ── REPUTATION ECHOES ── -->
+  <div class="pc-infobox" style="margin-bottom:1.5rem;">
+    <div class="pc-infobox-title">Living reputation echoes</div>
+    <p style="font-size:13px; color:var(--text-secondary); margin:0 0 .6rem; line-height:1.55;">
+      Achievement and milestone events mint permanent satellite marks that orbit the Pixie canvas. Each echo carries physics: fresher echoes pulse faster and sit closer in; older ones drift outward and slow. More significant events render larger and brighter. These are memory nodes — stable against wake distortion and mouse magnetism — so they read as a permanent, legible record of the user's history on the platform.
+    </p>
+    <div class="pc-echo-legend">
+      <div class="pc-echo-item"><div class="pc-echo-dot" style="background:#38BDF8"></div>ACHIEVEMENT_ARTIFACT</div>
+      <div class="pc-echo-item"><div class="pc-echo-dot" style="background:#A855F7"></div>LEGACY_ECHO</div>
+      <div class="pc-echo-item" style="font-style:italic; color:var(--text-muted)">resonance: drives glow · createdAt: drives orbit radius + pulse speed</div>
+    </div>
+  </div>
+
+  <!-- ── EXPORT CAPABILITIES ── -->
+  <div class="pc-section-label">Export and portability</div>
+  <div class="pc-export-row">
+    <div class="pc-export-card">
+      <div class="pc-export-icon"><i class="ti ti-photo" aria-hidden="true"></i></div>
+      <div class="pc-export-title">PNG snapshot</div>
+      <div class="pc-export-desc">Lossless canvas capture at any scale via toDataURL()</div>
+    </div>
+    <div class="pc-export-card">
+      <div class="pc-export-icon"><i class="ti ti-code" aria-hidden="true"></i></div>
+      <div class="pc-export-title">Animated SVG</div>
+      <div class="pc-export-desc">Procedural SVG with CSS keyframes for embedding anywhere</div>
+    </div>
+    <div class="pc-export-card">
+      <div class="pc-export-icon"><i class="ti ti-drag-drop" aria-hidden="true"></i></div>
+      <div class="pc-export-title">Drag-and-drop</div>
+      <div class="pc-export-desc">Native HTML drag events pipe a PNG blob to any drop target</div>
+    </div>
+    <div class="pc-export-card">
+      <div class="pc-export-icon"><i class="ti ti-shopping-bag" aria-hidden="true"></i></div>
+      <div class="pc-export-title">Marketplace skins</div>
+      <div class="pc-export-desc">AGENT_SKIN assets composite onto canvas, clipped to core shape</div>
+    </div>
+  </div>
+
+  <!-- ── MARKETPLACE + MIGRATION NOTE ── -->
+  <div class="pc-two-col" style="margin-bottom:.5rem;">
+    <div class="pc-infobox">
+      <div class="pc-infobox-title">Marketplace integration</div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">AGENT_SKIN</span><span class="pc-infobox-val">Premium visual texture, composited</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">IDENTITY_THEME</span><span class="pc-infobox-val">Bundle: animation + shape + palette</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">ACHIEVEMENT_ARTIFACT</span><span class="pc-infobox-val">Minted on approval — reputation echo</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">LEGACY_ECHO</span><span class="pc-infobox-val">Milestone marker — permanent orbit</span></div>
+    </div>
+    <div class="pc-infobox">
+      <div class="pc-infobox-title">Migration status</div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">Feature flag</span><span class="pc-infobox-val">PIXIE_V2=true</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">Replaces</span><span class="pc-infobox-val">UserAgentPersona + useAgentPersona</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">API (old)</span><span class="pc-infobox-val">GET/PUT /api/agent/persona</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">API (new)</span><span class="pc-infobox-val">GET/PUT /api/pixie</span></div>
+      <div class="pc-infobox-row"><span class="pc-infobox-key">DB migration</span><span class="pc-infobox-val">pixie_companions table (Alembic)</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  /* ── DATA ─────────────────────────────────────── */
+  const ARCHETYPES = [
+    { id:'archivist',   label:'Archivist',   role:'curator',  animation:'orbit',  shape:'circle',  density:'normal', rings:2, speed:1.0, wobble:0.8, conn:45, breathe:1.2 },
+    { id:'artisan',     label:'Artisan',     role:'creator',  animation:'wave',   shape:'diamond', density:'dense',  rings:2, speed:1.3, wobble:1.4, conn:55, breathe:1.8 },
+    { id:'navigator',   label:'Navigator',   role:'director', animation:'pulse',  shape:'shield',  density:'normal', rings:3, speed:0.9, wobble:1.0, conn:40, breathe:2.2 },
+    { id:'oracle',      label:'Oracle',      role:'analyst',  animation:'neural', shape:'hexagon', density:'dense',  rings:3, speed:0.7, wobble:1.8, conn:70, breathe:0.8 },
+    { id:'forgekeeper', label:'Forgekeeper', role:'builder',  animation:'static', shape:'hexagon', density:'sparse', rings:1, speed:0.3, wobble:0.4, conn:30, breathe:0.5 },
+  ];
+
+  const THEMES = {
+    ember:    { core:'#A52A2A', ring:'#C24E4E', glow:'rgba(167,65,51,0.32)', particle:'#FFB400', accent:'#FF8C42' },
+    arctic:   { core:'#0369A1', ring:'#38BDF8', glow:'rgba(3,105,161,0.32)', particle:'#BAE6FD', accent:'#7DD3FC' },
+    prism:    { core:'#7E22CE', ring:'#A855F7', glow:'rgba(126,34,206,0.32)', particle:'#22D3EE', accent:'#D946EF' },
+    solar:    { core:'#B45309', ring:'#F59E0B', glow:'rgba(180,83,9,0.32)', particle:'#FDE68A', accent:'#FBBF24' },
+    void:     { core:'#1E293B', ring:'#64748B', glow:'rgba(30,41,59,0.32)', particle:'#F1F5F9', accent:'#94A3B8' },
+    neon:     { core:'#0D0D0D', ring:'#39FF14', glow:'rgba(57,255,20,0.22)', particle:'#39FF14', accent:'#00FFFF' },
+    rose:     { core:'#881337', ring:'#F43F5E', glow:'rgba(244,63,94,0.28)', particle:'#FCA5A5', accent:'#FB7185' },
+    forest:   { core:'#14532D', ring:'#22C55E', glow:'rgba(34,197,94,0.25)', particle:'#BBF7D0', accent:'#4ADE80' },
+    plasma:   { core:'#2E1065', ring:'#7C3AED', glow:'rgba(124,58,237,0.30)', particle:'#E879F9', accent:'#A855F7' },
+    gold:     { core:'#713F12', ring:'#EAB308', glow:'rgba(234,179,8,0.28)', particle:'#FEF08A', accent:'#FACC15' },
+    midnight: { core:'#0F172A', ring:'#334155', glow:'rgba(15,23,42,0.45)', particle:'#94A3B8', accent:'#38BDF8' },
+    copper:   { core:'#7C2D12', ring:'#EA580C', glow:'rgba(234,88,12,0.28)', particle:'#FED7AA', accent:'#FB923C' },
+    ice:      { core:'#E0F2FE', ring:'#BAE6FD', glow:'rgba(186,230,253,0.35)', particle:'#0369A1', accent:'#0EA5E9' },
+  };
+
+  /* ── STATE ─────────────────────────────────────── */
+  let currentArchetypeIdx = 0;
+  let currentThemeId = 'prism';
+  let currentPhase = 'idle';
+  let progressVal = 0;
+  let animId = null;
+  let particles = [];
+  let t = 0;
+  let mouseX = 65, mouseY = 65;
+
+  /* ── ARCH GRID ─────────────────────────────────── */
+  const archColors = ['#8B5CF6','#F59E0B','#0EA5E9','#10B981','#F97316'];
+  const archIcons = ['◎','◇','⬡','◈','⬢'];
+
+  const grid = document.getElementById('arch-grid');
+  ARCHETYPES.forEach((a,i) => {
+    const card = document.createElement('div');
+    card.className = 'pc-arch-card' + (i===0?' active':'');
+    card.dataset.idx = i;
+    card.innerHTML = `
+      <div class="pc-arch-dot" style="background:${archColors[i]}22; color:${archColors[i]}">${archIcons[i]}</div>
+      <div class="pc-arch-name">${a.label}</div>
+      <div class="pc-arch-role">${a.role}</div>
+      <div class="pc-arch-anim">${a.animation} · ${a.shape}</div>
+    `;
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.pc-arch-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      currentArchetypeIdx = i;
+      initParticles();
+    });
+    grid.appendChild(card);
+  });
+
+  /* ── THEME ROW ─────────────────────────────────── */
+  const themeRow = document.getElementById('theme-row');
+  Object.entries(THEMES).forEach(([id, th]) => {
+    const dot = document.createElement('div');
+    dot.className = 'pc-theme-dot' + (id===currentThemeId?' on':'');
+    dot.style.background = th.ring;
+    dot.title = id;
+    dot.addEventListener('click', () => {
+      document.querySelectorAll('.pc-theme-dot').forEach(d => d.classList.remove('on'));
+      dot.classList.add('on');
+      currentThemeId = id;
+    });
+    themeRow.appendChild(dot);
+  });
+
+  /* ── PHASE BUTTONS ─────────────────────────────── */
+  document.getElementById('phase-sel').addEventListener('click', e => {
+    const btn = e.target.closest('.pc-phase-btn');
+    if (!btn) return;
+    document.querySelectorAll('.pc-phase-btn').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    currentPhase = btn.dataset.phase;
+    progressVal = 0;
+    highlightPhase(currentPhase);
+    if (currentPhase === 'executing') {
+      let p = 0;
+      const tick = setInterval(() => {
+        p += 2; progressVal = Math.min(p, 100);
+        if (p >= 100) clearInterval(tick);
+      }, 80);
+    }
+  });
+
+  function highlightPhase(phase) {
+    ['idle','planning','review','executing','completed','failed'].forEach(ph => {
+      const el = document.getElementById('rt-'+ph);
+      if (el) el.classList.toggle('pc-active', ph === phase);
+    });
+  }
+  highlightPhase('idle');
+
+  /* ── CANVAS SETUP ─────────────────────────────── */
+  const canvas = document.getElementById('live-pixie-canvas');
+  const ctx = canvas.getContext('2d');
+  const SZ = 130, CX = 65, CY = 65;
+
+  canvas.addEventListener('mousemove', e => {
+    const r = canvas.getBoundingClientRect();
+    mouseX = e.clientX - r.left;
+    mouseY = e.clientY - r.top;
+  });
+  canvas.addEventListener('mouseleave', () => { mouseX = CX; mouseY = CY; });
+
+  function hexToRgb(hex) {
+    const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return r ? [parseInt(r[1],16), parseInt(r[2],16), parseInt(r[3],16)] : [200,200,200];
+  }
+
+  /* ── PARTICLES ─────────────────────────────────── */
+  function initParticles() {
+    const arch = ARCHETYPES[currentArchetypeIdx];
+    const densityCount = arch.density === 'sparse' ? 5 : arch.density === 'dense' ? 11 : 8;
+    particles = [];
+    const ringCount = arch.rings;
+    for (let ri = 0; ri < ringCount; ri++) {
+      const baseR = 24 + ri * 12;
+      for (let pi = 0; pi < densityCount; pi++) {
+        particles.push({
+          angle: (pi / densityCount) * Math.PI * 2 + (ri * 0.5),
+          radius: baseR,
+          baseRadius: baseR,
+          speed: (0.008 + Math.random() * 0.006) * arch.speed * (ri === 0 ? 1.3 : 1),
+          size: 1.2 + Math.random() * 0.8,
+          opacity: 0.5 + Math.random() * 0.45,
+          hueShift: (Math.random() - 0.5) * 30,
+          phase: Math.random() * Math.PI * 2,
+          wobble: 0.5 + Math.random() * 1.5,
+        });
+      }
+    }
+  }
+  initParticles();
+
+  /* ── SHAPE PATH ─────────────────────────────────── */
+  function buildCorePath(shape, cx, cy, r) {
+    ctx.beginPath();
+    switch(shape) {
+      case 'hexagon':
+        for (let i=0;i<6;i++) {
+          const a=(i/6)*Math.PI*2-Math.PI/6;
+          const x=cx+Math.cos(a)*r, y=cy+Math.sin(a)*r;
+          i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+        }
+        ctx.closePath(); break;
+      case 'diamond':
+        ctx.moveTo(cx,cy-r); ctx.lineTo(cx+r*0.8,cy);
+        ctx.lineTo(cx,cy+r); ctx.lineTo(cx-r*0.8,cy);
+        ctx.closePath(); break;
+      case 'shield':
+        ctx.moveTo(cx,cy-r);
+        ctx.quadraticCurveTo(cx+r,cy-r*0.6,cx+r,cy);
+        ctx.quadraticCurveTo(cx+r,cy+r*0.4,cx,cy+r);
+        ctx.quadraticCurveTo(cx-r,cy+r*0.4,cx-r,cy);
+        ctx.quadraticCurveTo(cx-r,cy-r*0.6,cx,cy-r);
+        ctx.closePath(); break;
+      default:
+        ctx.arc(cx,cy,r,0,Math.PI*2);
+    }
+  }
+
+  /* ── ANIMATE ────────────────────────────────────── */
+  function animate() {
+    t += 0.016;
+    const arch = ARCHETYPES[currentArchetypeIdx];
+    const theme = THEMES[currentThemeId] || THEMES.prism;
+
+    const phaseEn = currentPhase==='executing' ? 1.2+(progressVal/100)*0.8
+                  : currentPhase==='planning' ? 1.1
+                  : currentPhase==='completed' ? 1.3
+                  : currentPhase==='failed' ? 0.5
+                  : 0.85;
+    const modeEn = currentPhase==='executing'||currentPhase==='completed' ? 1.2
+                 : currentPhase==='idle' ? 0.8 : 1.0;
+
+    const dx = (mouseX - CX) * 0.04;
+    const dy = (mouseY - CY) * 0.04;
+    const nx = CX + dx, ny = CY + dy;
+
+    ctx.clearRect(0,0,SZ,SZ);
+
+    // Glow
+    const [cR,cG,cB] = hexToRgb(theme.ring);
+    const glowR = 28 + Math.sin(t*arch.breathe)*3 + phaseEn*5;
+    const grd = ctx.createRadialGradient(nx,ny,0,nx,ny,glowR*2.2);
+    grd.addColorStop(0, `rgba(${cR},${cG},${cB},${0.22*modeEn})`);
+    grd.addColorStop(0.5, `rgba(${cR},${cG},${cB},${0.08*modeEn})`);
+    grd.addColorStop(1, `rgba(${cR},${cG},${cB},0)`);
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(nx,ny,glowR*2.2,0,Math.PI*2); ctx.fill();
+
+    // Core
+    const coreR = 11 + Math.sin(t*arch.breathe)*1.5*phaseEn;
+    const shape = arch.shape;
+    buildCorePath(shape, nx, ny, coreR);
+    const coreGrd = ctx.createRadialGradient(nx,ny,0,nx,ny,coreR);
+    coreGrd.addColorStop(0,`rgba(${cR},${cG},${cB},0.95)`);
+    coreGrd.addColorStop(0.6,`rgba(${cR},${cG},${cB},0.7)`);
+    coreGrd.addColorStop(1,`rgba(${cR},${cG},${cB},0.3)`);
+    ctx.fillStyle = coreGrd;
+    ctx.fill();
+
+    // Progress ring
+    if (currentPhase==='executing' && progressVal>0) {
+      const pr=coreR+14, sa=-Math.PI/2, ea=sa+(progressVal/100)*Math.PI*2;
+      ctx.strokeStyle=`rgba(${cR},${cG},${cB},0.5)`; ctx.lineWidth=1.5; ctx.lineCap='round';
+      ctx.beginPath(); ctx.arc(nx,ny,pr,sa,ea); ctx.stroke();
+      ctx.strokeStyle=`rgba(255,255,255,0.05)`; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(nx,ny,pr,0,Math.PI*2); ctx.stroke();
+    }
+
+    // Particles
+    const animation = arch.animation;
+    particles.forEach((p,i) => {
+      const wF = arch.wobble;
+      if (animation==='static') { p.angle += p.speed*0.1; }
+      else if (animation==='wave') { p.angle+=p.speed; p.radius=p.baseRadius+Math.sin(t*1.5+p.phase)*7+phaseEn*4; }
+      else if (animation==='pulse') { p.angle+=p.speed; p.radius=p.baseRadius+Math.sin(t*2.0)*5+phaseEn*6; }
+      else if (animation==='neural') { p.angle+=p.speed*0.6; p.radius=p.baseRadius+Math.sin(t*p.wobble*wF+p.phase)*7+phaseEn*10; }
+      else { p.angle+=p.speed*(1+phaseEn*0.5); const wo=Math.sin(t*p.wobble*wF+p.phase)*4; p.radius+=(p.baseRadius+wo-p.radius)*0.05; }
+
+      const px=nx+Math.cos(p.angle)*p.radius, py=ny+Math.sin(p.angle)*p.radius;
+      ctx.save(); ctx.globalAlpha=p.opacity*(0.6+phaseEn*0.3)*modeEn;
+      const pG = ctx.createRadialGradient(px,py,0,px,py,p.size*2.5);
+      pG.addColorStop(0,`rgba(${cR},${cG},${cB},0.9)`);
+      pG.addColorStop(1,`rgba(${cR},${cG},${cB},0)`);
+      ctx.fillStyle=pG; ctx.beginPath(); ctx.arc(px,py,p.size*2.5,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=`rgba(${cR},${cG},${cB},0.95)`;
+      ctx.beginPath(); ctx.arc(px,py,p.size*0.5,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+
+      if (animation==='neural' && i%3===0) {
+        const next = particles[(i+1)%particles.length];
+        const npx=nx+Math.cos(next.angle)*next.radius, npy=ny+Math.sin(next.angle)*next.radius;
+        const lD=Math.sqrt((px-npx)**2+(py-npy)**2);
+        if (lD<arch.conn) {
+          ctx.strokeStyle=`rgba(${cR},${cG},${cB},${(1-lD/arch.conn)*0.12})`;
+          ctx.lineWidth=0.4; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(npx,npy); ctx.stroke();
+        }
+      }
+    });
+
+    // Rings
+    const ringCount = arch.rings;
+    const rPhase = (t*(currentPhase==='executing'?1.2:0.8))%(Math.PI*2);
+    const rAlpha = Math.sin(rPhase)*0.5+0.5;
+    for (let r=0;r<ringCount;r++) {
+      const rSz=36+r*11+rAlpha*(8-r*2)+phaseEn*(10-r*2);
+      ctx.strokeStyle=`rgba(${cR},${cG},${cB},${0.06*rAlpha*modeEn/(r+1)})`;
+      ctx.lineWidth=0.8; ctx.beginPath(); ctx.arc(nx,ny,rSz,0,Math.PI*2); ctx.stroke();
+    }
+
+    // Echo marks (simulated)
+    const echoes = [
+      { color:'#38BDF8', r:0.9, age:0.9 },
+      { color:'#A855F7', r:0.6, age:0.3 },
+      { color:'#10B981', r:0.75, age:0.7 },
+    ];
+    const baseEchoR = 36+(ringCount-1)*11+28;
+    echoes.forEach((echo,i) => {
+      const angle = ((i/echoes.length)*Math.PI*2)-Math.PI/2;
+      const orbitR = baseEchoR + echo.age*10;
+      const recency = 1-echo.age;
+      const pulseSpeed = 0.35+recency*0.5;
+      const pulse = Math.sin(t*pulseSpeed+i)*0.3+0.7;
+      const ex = nx+Math.cos(angle)*orbitR, ey = ny+Math.sin(angle)*orbitR;
+      const [er,eg,eb] = hexToRgb(echo.color);
+      const dotR = 2+echo.r*1.5;
+      const eG = ctx.createRadialGradient(ex,ey,0,ex,ey,dotR*3);
+      eG.addColorStop(0,`rgba(${er},${eg},${eb},${(0.3+echo.r*0.3)*pulse})`);
+      eG.addColorStop(1,`rgba(${er},${eg},${eb},0)`);
+      ctx.fillStyle=eG; ctx.beginPath(); ctx.arc(ex,ey,dotR*3,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=`rgba(${er},${eg},${eb},${0.85*pulse})`;
+      ctx.beginPath(); ctx.arc(ex,ey,dotR,0,Math.PI*2); ctx.fill();
+    });
+
+    animId = requestAnimationFrame(animate);
+  }
+
+  animate();
+})();
+</script>
