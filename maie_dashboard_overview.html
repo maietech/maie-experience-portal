@@ -6,33 +6,12 @@
     --du-border: rgba(255,255,255,0.08);
     --du-text: #f0e9e4;
     --du-muted: #9a8f88;
-    --du-brand: #8a2e22;       /* Official-literature red — matches the product overview document */
-    --du-brand-light: #c24e4e; /* The live product's UI red, used only for "this is the real app" moments */
+    --du-brand: #8a2e22;
+    --du-brand-light: #c24e4e;
     --du-amber: #d6a13c;
     --du-blue: #4d7ea8;
     --du-green: #5b9a6f;
 
-    /* ── This file owns its own theme, unconditionally ────────────────────
-       Earlier drafts of this stylesheet called host-app tokens like
-       --text-primary, --surface-1, --border-accent, --bg-accent, and
-       --font-sans, assuming they'd be supplied by the app this file is
-       mounted in. Checked against the real global.css: none of those
-       names exist there — the app's actual tokens are --background-color,
-       --border-color, --font-ui, plus a namespaced --maie-* dashboard
-       set. So the "host chain" never bridged to a real theme in either
-       direction; it silently fell through to these --du-* values every
-       time, which is also the effectively-correct outcome: this file's
-       own footer identifies it as a standalone component of the
-       presentation package, not a live in-app fragment, and the app's
-       own default theme is *light* (dark is an additive [data-theme=
-       "dark"] override) — so even a correct chain would default this
-       obsidian NLE surface to a white background, clashing with the
-       hardcoded-dark .du-hero above it. Locking to --du-* directly
-       avoids that: this page looks the same regardless of host theme,
-       by design. (If real in-app theming is wanted later, the bridge
-       point is --maie-* — --maie-brand and --maie-border already land
-       within a few points of --du-brand-light and --du-border in dark
-       mode — but that's a deliberate follow-up, not a default.) */
     --du-text-secondary: rgba(240,233,228,0.65);
     --du-text-accent:    var(--du-brand-light);
     --du-surface-1:      rgba(255,255,255,0.025);
@@ -44,30 +23,36 @@
     --du-ease-cinematic: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* Standard visually-hidden pattern for the page's real (non-decorative)
-     <h2>, which sits above the presentational hero. */
   .sr-only {
     position: absolute; width: 1px; height: 1px;
     padding: 0; margin: -1px; overflow: hidden;
     clip: rect(0,0,0,0); white-space: nowrap; border: 0;
   }
 
+  /* ── Structural Cushioning Added Here ── */
   .du-root {
     font-family: var(--du-font-sans);
     color: var(--du-text);
-    /* Anchors the dark canvas so the transparent card/tab overlays below
-       (rgba(255,255,255,0.02–0.07) surfaces) have something dark to sit
-       on — without this the browser's white default shows through
-       everywhere outside the hero's own hardcoded background. */
     background: var(--du-bg);
+    /* Prevents inner elements from touching the outer walls */
+    padding: 2.5rem 3rem; 
+    box-sizing: border-box;
+    /* Optional: constrain width so it doesn't stretch infinitely on ultrawides */
+    max-width: 1280px; 
+    margin: 0 auto;
+  }
+  
+  /* Ensure padding doesn't blow out widths */
+  .du-root * {
+    box-sizing: border-box;
   }
 
   /* ── Hero ───────────────────────────────────────────────────────────── */
   .du-hero {
     background: var(--du-bg);
-    border-radius: 16px;
-    padding: 2rem;
-    margin-bottom: 1.5rem;
+    border-radius: 18px;
+    padding: 2.5rem; /* Softened from 2rem */
+    margin-bottom: 2rem; /* Increased from 1.5rem */
     position: relative;
     overflow: hidden;
   }
@@ -79,14 +64,14 @@
                 radial-gradient(ellipse 45% 55% at 95% 85%, rgba(77,126,168,0.10) 0%, transparent 60%);
     pointer-events:none;
   }
-  .du-hero-top { position:relative; z-index:1; display:flex; align-items:flex-start; justify-content:space-between; gap:1.5rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+  .du-hero-top { position:relative; z-index:1; display:flex; align-items:flex-start; justify-content:space-between; gap:2rem; margin-bottom:1.5rem; flex-wrap:wrap; }
   .du-tag {
     display:inline-block;
     font-size:10px; letter-spacing:.12em; text-transform:uppercase;
     color: var(--du-brand-light); border: 0.5px solid rgba(194,78,78,.4);
-    border-radius:4px; padding:3px 8px; margin-bottom:.75rem; font-weight:500;
+    border-radius:4px; padding:4px 10px; margin-bottom:1rem; font-weight:500;
   }
-  .du-hero-title { font-size:22px; font-weight:500; color:#fbf3ee; margin:0 0 .5rem; line-height:1.25; }
+  .du-hero-title { font-size:24px; font-weight:500; color:#fbf3ee; margin:0 0 .75rem; line-height:1.25; }
   .du-hero-sub { font-size:14px; color: #b3a8a0; line-height:1.6; margin:0; max-width:480px; }
 
   /* ── Live cockpit replica ──────────────────────────────────────────── */
@@ -95,126 +80,111 @@
     width: 380px;
     background: #0c0d10;
     border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.45);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
     font-family: var(--du-font-sans);
   }
   .du-cockpit-chrome {
     display:flex; align-items:center; gap:6px;
-    padding:7px 10px; background: rgba(255,255,255,0.018); border-bottom:1px solid rgba(255,255,255,0.07);
+    padding:8px 12px; background: rgba(255,255,255,0.018); border-bottom:1px solid rgba(255,255,255,0.07);
   }
   .du-cockpit-dot { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,0.15); }
   .du-cockpit-label { font-family: var(--font-mono, monospace); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:rgba(232,230,227,0.32); margin-left:4px; }
   .du-cockpit-body { display:flex; height:198px; }
   .du-cockpit-side {
-    width: 34px; background: rgba(255,255,255,0.02); border-right:1px solid rgba(255,255,255,0.06);
-    display:flex; flex-direction:column; align-items:center; gap:8px; padding-top:10px;
+    width: 36px; background: rgba(255,255,255,0.02); border-right:1px solid rgba(255,255,255,0.06);
+    display:flex; flex-direction:column; align-items:center; gap:10px; padding-top:12px;
   }
   .du-cockpit-side-icon { width:16px; height:16px; border-radius:4px; background:rgba(255,255,255,0.07); transition: background .2s, box-shadow .2s; }
   .du-cockpit-side-icon.on { background: var(--du-brand-light); box-shadow:0 0 8px rgba(194,78,78,.5); }
-  .du-cockpit-main { flex:1; padding:10px; display:flex; flex-direction:column; gap:6px; min-width:0; }
-  .du-cockpit-tilerow { display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; }
+  .du-cockpit-main { flex:1; padding:12px; display:flex; flex-direction:column; gap:8px; min-width:0; }
+  .du-cockpit-tilerow { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
   .du-cockpit-tile {
     background: rgba(255,255,255,0.032); border:1px solid rgba(255,255,255,0.058); border-radius:6px;
-    padding:6px 7px; transition: border-color .2s, background .2s, transform .2s;
+    padding:8px; transition: border-color .2s, background .2s, transform .2s;
   }
   .du-cockpit-tile.on { border-color: rgba(138,46,34,0.5); background: rgba(138,46,34,0.14); transform: translateY(-1px); }
-  .du-cockpit-tile-label { font-family: var(--font-mono, monospace); font-size:6.5px; letter-spacing:.06em; text-transform:uppercase; color:rgba(232,230,227,0.34); }
-  .du-cockpit-tile-val { font-family: var(--font-mono, monospace); font-size:11px; font-weight:600; color:rgba(232,230,227,0.85); margin-top:2px; }
+  .du-cockpit-tile-label { font-family: var(--font-mono, monospace); font-size:7px; letter-spacing:.06em; text-transform:uppercase; color:rgba(232,230,227,0.34); }
+  .du-cockpit-tile-val { font-family: var(--font-mono, monospace); font-size:12px; font-weight:600; color:rgba(232,230,227,0.85); margin-top:3px; }
   .du-cockpit-nucleus {
-    flex:1; border-radius:6px; background: rgba(255,255,255,0.018); border:1px solid rgba(255,255,255,0.058);
+    flex:1; border-radius:8px; background: rgba(255,255,255,0.018); border:1px solid rgba(255,255,255,0.058);
     display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;
     transition: border-color .2s;
   }
   .du-cockpit-nucleus.on { border-color: rgba(194,78,78,0.45); }
-  /*
-    Agent nucleus — was a static pulsing red orb (a "machine engine" motif
-    that reads as cold/robotic and clashes with the Pixie companion
-    established elsewhere in the product). Now a localized instance of the
-    shared makePixie() engine on the ember theme, matched to the same
-    breathing/particle language as PixieCompanion and WakeRecoveryOverlay.
-    Canvas bitmap (56px) is intentionally larger than the old 30px visual
-    orb — same "stage bigger than performer" pattern as maie-pixie.js v2.1
-    — so the ambient glow has room to fall off before the container's
-    overflow:hidden clips it.
-  */
   .du-cockpit-orb-canvas { width:56px; height:56px; opacity:.9; transition: opacity .3s; }
   .du-cockpit-nucleus.on .du-cockpit-orb-canvas { opacity:1; }
   .du-cockpit-rail {
-    width: 46px; background: rgba(255,255,255,0.02); border-left:1px solid rgba(255,255,255,0.06);
-    display:flex; flex-direction:column; gap:4px; padding:8px 6px;
+    width: 48px; background: rgba(255,255,255,0.02); border-left:1px solid rgba(255,255,255,0.06);
+    display:flex; flex-direction:column; gap:5px; padding:10px 8px;
   }
-  .du-cockpit-rail-item { height:7px; border-radius:3px; background:rgba(255,255,255,0.06); transition: background .2s; }
+  .du-cockpit-rail-item { height:8px; border-radius:4px; background:rgba(255,255,255,0.06); transition: background .2s; }
   .du-cockpit-rail-item.on { background: var(--du-green); box-shadow: 0 0 5px rgba(91,154,111,.5); }
   .du-cockpit-sheet {
     height: 0; background: rgba(255,255,255,0.025); border-top: 1px solid rgba(138,46,34,0.4);
     overflow:hidden; transition: height .35s cubic-bezier(.4,0,.2,1);
     display:flex; align-items:center; justify-content:center;
   }
-  .du-cockpit-sheet.on { height: 46px; }
+  .du-cockpit-sheet.on { height: 48px; }
   .du-cockpit-sheet-label { font-family: var(--font-mono, monospace); font-size:9px; color: var(--du-brand-light); letter-spacing:.06em; opacity:0; transition:opacity .2s; }
   .du-cockpit-sheet.on .du-cockpit-sheet-label { opacity:1; transition-delay:.15s; }
 
   /* ── Section label ─────────────────────────────────────────────────── */
   .du-section-label {
-    font-size:11px; letter-spacing:.1em; text-transform:uppercase;
-    color: var(--du-muted); margin: 0 0 .75rem; font-weight:500;
+    font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+    color: var(--du-muted); margin: 0 0 1rem; font-weight:500;
   }
 
-  /* ── Module grid (click → drives cockpit) ────────────────────────────── */
+  /* ── Module grid ────────────────────────────── */
   .du-module-grid {
     display:grid;
     grid-template-columns: repeat(4, 1fr);
-    gap:8px;
-    margin-bottom:1.5rem;
+    gap: 14px; /* Increased from 8px for uncrowded look */
+    margin-bottom: 2rem; /* Increased from 1.5rem */
   }
   .du-module-card {
     background: var(--du-surface-1);
     border: 0.5px solid var(--du-border);
-    border-radius:10px;
-    padding:.8rem .7rem;
+    border-radius:12px;
+    padding: 1.25rem 1.15rem; /* Pushed out for softer cushioning */
     cursor:pointer;
     transition: border-color .15s, background .15s, transform .15s;
   }
   .du-module-card:hover, .du-module-card.active {
     border-color: var(--du-border-accent);
     background: var(--du-bg-accent);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
   }
   .du-module-card.active { border-width: 1px; }
-  .du-module-icon { font-size:16px; margin-bottom:.35rem; }
-  .du-module-name { font-size:12.5px; font-weight:500; color: var(--du-text); margin: 0 0 .15rem; }
-  .du-module-role { font-size:10.5px; color: var(--du-muted); line-height:1.4; }
+  .du-module-icon { font-size:18px; margin-bottom:.5rem; }
+  .du-module-name { font-size:13px; font-weight:500; color: var(--du-text); margin: 0 0 .25rem; }
+  .du-module-role { font-size:11px; color: var(--du-text-secondary); line-height:1.5; }
 
-  /* ── View tabs (hero) ─────────────────────────────────────────────────
-     Replaces the old standalone "Three Dashboard Views" text grid. Same
-     content, folded into a subtle tab strip right where the user is
-     already looking, with a one-line description that swaps on click
-     instead of three permanently-expanded paragraphs. */
+  /* ── View tabs (hero) ───────────────────────────────────────────────── */
   .du-view-tabs {
-    display: flex; gap: 4px; margin-top: .85rem;
-    border: 0.5px solid var(--du-border); border-radius: 8px; padding: 3px;
+    display: flex; gap: 6px; margin-top: 1.25rem;
+    border: 0.5px solid var(--du-border); border-radius: 8px; padding: 4px;
     width: max-content;
   }
   .du-view-tab {
-    font-size: 10.5px; font-weight: 500; letter-spacing: .04em;
-    padding: 5px 11px; border-radius: 6px; cursor: pointer;
+    font-size: 11px; font-weight: 500; letter-spacing: .04em;
+    padding: 6px 14px; border-radius: 6px; cursor: pointer;
     color: var(--du-muted); background: transparent;
     transition: background .2s var(--du-ease-cinematic), color .2s var(--du-ease-cinematic);
   }
   .du-view-tab.active { background: var(--du-bg-accent); color: var(--du-text-accent); }
   .du-view-tab-desc {
-    font-size: 11.5px; color: var(--du-text-secondary); line-height: 1.55;
-    margin-top: .55rem; max-width: 480px; min-height: 32px;
+    font-size: 12px; color: var(--du-text-secondary); line-height: 1.6;
+    margin-top: .75rem; max-width: 480px; min-height: 36px;
     transition: opacity .3s var(--du-ease-cinematic);
   }
   .du-rt-row {
     display:grid; grid-template-columns: repeat(5, 1fr);
-    gap:6px; margin-top:.6rem;
+    gap:8px; margin-top:.75rem;
   }
   .du-stage {
-    border-radius:8px; padding:.55rem .25rem;
+    border-radius:8px; padding:.75rem .5rem;
     text-align:center; font-size:11px;
     border: 0.5px solid var(--du-border);
     color: var(--du-text-secondary);
@@ -226,29 +196,23 @@
     background: var(--du-bg-accent); border-color: var(--du-border-accent);
     color: var(--du-text-accent); font-weight:500;
   }
-  .du-stage-sub { font-size:9px; color: var(--du-muted); margin-top:2px; }
+  .du-stage-sub { font-size:9.5px; color: var(--du-muted); margin-top:4px; }
 
   /* ── Risk gate row ─────────────────────────────────────────────────────── */
-  .du-risk-row { display:flex; gap:5px; flex-wrap:wrap; margin-top:.65rem; }
+  .du-risk-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:.85rem; }
   .du-risk-chip {
-    font-size:10.5px; padding:3px 9px; border-radius:20px;
+    font-size:11px; padding:4px 10px; border-radius:20px;
     border: 0.5px solid var(--du-border); color: var(--du-text-secondary);
-    font-family: var(--du-font-sans); display:flex; align-items:center; gap:5px;
+    font-family: var(--du-font-sans); display:flex; align-items:center; gap:6px;
   }
   .du-risk-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
 
-  /* ── Interactive Module Detail — cinematic panel ──────────────────────
-     Replaces the old static two-column infoboxes and differentiator row.
-     One surface, content-swapped per module selection instead of
-     permanently-stacked reading material. Exit/enter choreography:
-     current panel gets .exit-out, is removed after 240ms, replacement
-     mounts with .enter-in and its .stagger-child elements settle in on
-     a staggered delay. */
+  /* ── Interactive Module Detail — cinematic panel ────────────────────── */
   .du-detail-panel {
-    background: var(--du-surface-1); border-radius: 14px;
+    background: var(--du-surface-1); border-radius: 16px;
     border: 0.5px solid var(--du-border);
-    padding: 1.15rem 1.25rem;
-    display: flex; flex-direction: column; gap: 1rem;
+    padding: 2rem 2.25rem; /* Generous padding replaces the tight box */
+    display: flex; flex-direction: column; gap: 1.25rem; /* Larger gap between internal elements */
     opacity: 1; transform: translateY(0); filter: blur(0);
     transition: opacity .45s var(--du-ease-cinematic), transform .45s var(--du-ease-cinematic), filter .45s var(--du-ease-cinematic);
   }
@@ -263,30 +227,34 @@
   .stagger-2 { transition-delay: .07s !important; }
   .stagger-3 { transition-delay: .11s !important; }
 
-  .du-detail-head { display:flex; align-items:center; gap:.55rem; }
-  .du-detail-icon { font-size:16px; }
-  .du-detail-name { font-size:13.5px; font-weight:500; color: var(--du-text); }
-  .du-detail-body { font-size:12.5px; color: var(--du-text-secondary); line-height:1.6; }
-  .du-detail-attrs { display:flex; flex-wrap:wrap; gap:5px; }
-  .du-detail-attr { font-size:10.5px; border-radius:4px; padding:2px 7px; border:0.5px solid var(--du-border); color: var(--du-text-secondary); }
+  .du-detail-head { display:flex; align-items:center; gap:.75rem; }
+  .du-detail-icon { font-size:18px; }
+  .du-detail-name { font-size:14.5px; font-weight:500; color: var(--du-text); }
+  .du-detail-body { font-size:13px; color: var(--du-text-secondary); line-height:1.7; max-width: 900px; }
+  .du-detail-attrs { display:flex; flex-wrap:wrap; gap:8px; }
+  .du-detail-attr { font-size:11px; border-radius:6px; padding:4px 10px; border:0.5px solid var(--du-border); color: var(--du-text-secondary); }
 
-  /* Agent-only sub-panel: the Plan → Review → Approve → Execute lifecycle,
-     now revealed only when the Agent Workflow module is the active
-     selection, instead of living permanently at the page bottom. */
   .du-detail-divider {
-    border-top: 0.5px solid var(--du-border); padding-top: .85rem; margin-top: .1rem;
+    border-top: 0.5px solid var(--du-border); padding-top: 1.25rem; margin-top: .5rem;
   }
 
   .du-foot-note {
-    font-size: 11px; color: var(--du-muted); line-height: 1.6;
-    border-top: 0.5px solid var(--du-border); padding-top: .85rem; margin-top: .25rem;
+    font-size: 11.5px; color: var(--du-muted); line-height: 1.6;
+    border-top: 0.5px solid var(--du-border); 
+    padding-top: 1.25rem; margin-top: 1rem;
+    padding-bottom: 1rem; /* Keeps text off the very bottom */
+  }
+
+  @media (max-width: 900px) {
+    .du-root { padding: 1.5rem; }
+    .du-module-grid { grid-template-columns: repeat(2, 1fr); }
   }
 
   @media (max-width: 760px) {
     .du-hero-top { flex-direction: column; }
     .du-cockpit { width: 100%; }
-    .du-module-grid { grid-template-columns: repeat(2, 1fr); }
     .du-rt-row { grid-template-columns: repeat(2, 1fr); }
+    .du-detail-panel { padding: 1.5rem; }
   }
 
   @media (prefers-reduced-motion: reduce) {
