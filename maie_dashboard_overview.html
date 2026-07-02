@@ -12,19 +12,27 @@
     --du-blue: #4d7ea8;
     --du-green: #5b9a6f;
 
-    /* ── Standalone-safe fallbacks ──────────────────────────────────────
-       This file was written assuming it's mounted inside the main MAIE
-       app, which supplies --text-primary, --surface-1, --border-accent,
-       etc. globally. Viewed on its own (GitHub Pages, a raw file open,
-       any host that doesn't define those), every rule below that reads
-       one of those tokens silently falls back to the browser default —
-       black text, no background — which is exactly the dark-text-on-
-       nothing collision visible below the hero. Rather than hardcode
-       over the app tokens (which would break the "reads the live theme"
-       intent when this *is* embedded), every var(--host-token) call
-       below is chained to a local --du-* fallback: var(--host-token,
-       var(--du-*)). Embedded in the app, the host token wins as before.
-       Standalone, it falls through to these. */
+    /* ── This file owns its own theme, unconditionally ────────────────────
+       Earlier drafts of this stylesheet called host-app tokens like
+       --text-primary, --surface-1, --border-accent, --bg-accent, and
+       --font-sans, assuming they'd be supplied by the app this file is
+       mounted in. Checked against the real global.css: none of those
+       names exist there — the app's actual tokens are --background-color,
+       --border-color, --font-ui, plus a namespaced --maie-* dashboard
+       set. So the "host chain" never bridged to a real theme in either
+       direction; it silently fell through to these --du-* values every
+       time, which is also the effectively-correct outcome: this file's
+       own footer identifies it as a standalone component of the
+       presentation package, not a live in-app fragment, and the app's
+       own default theme is *light* (dark is an additive [data-theme=
+       "dark"] override) — so even a correct chain would default this
+       obsidian NLE surface to a white background, clashing with the
+       hardcoded-dark .du-hero above it. Locking to --du-* directly
+       avoids that: this page looks the same regardless of host theme,
+       by design. (If real in-app theming is wanted later, the bridge
+       point is --maie-* — --maie-brand and --maie-border already land
+       within a few points of --du-brand-light and --du-border in dark
+       mode — but that's a deliberate follow-up, not a default.) */
     --du-text-secondary: rgba(240,233,228,0.65);
     --du-text-accent:    var(--du-brand-light);
     --du-surface-1:      rgba(255,255,255,0.025);
@@ -36,19 +44,23 @@
     --du-ease-cinematic: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* Standard visually-hidden pattern — this file uses .sr-only on the
-     page's real <h2> (the hero heading is presentational/decorative by
-     comparison) assuming the host app defines it globally. Standalone,
-     an undefined .sr-only does nothing, so the heading renders visibly
-     above the hero as plain black serif text — the stray headline in
-     the screenshot. Defining it locally fixes both contexts. */
+  /* Standard visually-hidden pattern for the page's real (non-decorative)
+     <h2>, which sits above the presentational hero. */
   .sr-only {
     position: absolute; width: 1px; height: 1px;
     padding: 0; margin: -1px; overflow: hidden;
     clip: rect(0,0,0,0); white-space: nowrap; border: 0;
   }
 
-  .du-root { font-family: var(--font-sans, var(--du-font-sans)); color: var(--text-primary, var(--du-text)); }
+  .du-root {
+    font-family: var(--du-font-sans);
+    color: var(--du-text);
+    /* Anchors the dark canvas so the transparent card/tab overlays below
+       (rgba(255,255,255,0.02–0.07) surfaces) have something dark to sit
+       on — without this the browser's white default shows through
+       everywhere outside the hero's own hardcoded background. */
+    background: var(--du-bg);
+  }
 
   /* ── Hero ───────────────────────────────────────────────────────────── */
   .du-hero {
@@ -86,7 +98,7 @@
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 16px 40px rgba(0,0,0,0.45);
-    font-family: var(--font-sans, var(--du-font-sans));
+    font-family: var(--du-font-sans);
   }
   .du-cockpit-chrome {
     display:flex; align-items:center; gap:6px;
@@ -147,7 +159,7 @@
   /* ── Section label ─────────────────────────────────────────────────── */
   .du-section-label {
     font-size:11px; letter-spacing:.1em; text-transform:uppercase;
-    color: var(--text-muted, var(--du-muted)); margin: 0 0 .75rem; font-weight:500;
+    color: var(--du-muted); margin: 0 0 .75rem; font-weight:500;
   }
 
   /* ── Module grid (click → drives cockpit) ────────────────────────────── */
@@ -158,22 +170,22 @@
     margin-bottom:1.5rem;
   }
   .du-module-card {
-    background: var(--surface-1, var(--du-surface-1));
-    border: 0.5px solid var(--border, var(--du-border));
+    background: var(--du-surface-1);
+    border: 0.5px solid var(--du-border);
     border-radius:10px;
     padding:.8rem .7rem;
     cursor:pointer;
     transition: border-color .15s, background .15s, transform .15s;
   }
   .du-module-card:hover, .du-module-card.active {
-    border-color: var(--border-accent, var(--du-border-accent));
-    background: var(--bg-accent, var(--du-bg-accent));
+    border-color: var(--du-border-accent);
+    background: var(--du-bg-accent);
     transform: translateY(-1px);
   }
   .du-module-card.active { border-width: 1px; }
   .du-module-icon { font-size:16px; margin-bottom:.35rem; }
-  .du-module-name { font-size:12.5px; font-weight:500; color: var(--text-primary, var(--du-text)); margin: 0 0 .15rem; }
-  .du-module-role { font-size:10.5px; color: var(--text-muted, var(--du-muted)); line-height:1.4; }
+  .du-module-name { font-size:12.5px; font-weight:500; color: var(--du-text); margin: 0 0 .15rem; }
+  .du-module-role { font-size:10.5px; color: var(--du-muted); line-height:1.4; }
 
   /* ── View tabs (hero) ─────────────────────────────────────────────────
      Replaces the old standalone "Three Dashboard Views" text grid. Same
@@ -182,18 +194,18 @@
      instead of three permanently-expanded paragraphs. */
   .du-view-tabs {
     display: flex; gap: 4px; margin-top: .85rem;
-    border: 0.5px solid var(--border, var(--du-border)); border-radius: 8px; padding: 3px;
+    border: 0.5px solid var(--du-border); border-radius: 8px; padding: 3px;
     width: max-content;
   }
   .du-view-tab {
     font-size: 10.5px; font-weight: 500; letter-spacing: .04em;
     padding: 5px 11px; border-radius: 6px; cursor: pointer;
-    color: var(--text-muted, var(--du-muted)); background: transparent;
+    color: var(--du-muted); background: transparent;
     transition: background .2s var(--du-ease-cinematic), color .2s var(--du-ease-cinematic);
   }
-  .du-view-tab.active { background: var(--bg-accent, var(--du-bg-accent)); color: var(--text-accent, var(--du-text-accent)); }
+  .du-view-tab.active { background: var(--du-bg-accent); color: var(--du-text-accent); }
   .du-view-tab-desc {
-    font-size: 11.5px; color: var(--text-secondary, var(--du-text-secondary)); line-height: 1.55;
+    font-size: 11.5px; color: var(--du-text-secondary); line-height: 1.55;
     margin-top: .55rem; max-width: 480px; min-height: 32px;
     transition: opacity .3s var(--du-ease-cinematic);
   }
@@ -204,24 +216,24 @@
   .du-stage {
     border-radius:8px; padding:.55rem .25rem;
     text-align:center; font-size:11px;
-    border: 0.5px solid var(--border, var(--du-border));
-    color: var(--text-secondary, var(--du-text-secondary));
-    background: var(--surface-0, var(--du-surface-0));
+    border: 0.5px solid var(--du-border);
+    color: var(--du-text-secondary);
+    background: var(--du-surface-0);
     cursor:pointer;
     transition: background .15s, border-color .15s;
   }
   .du-stage.du-active {
-    background: var(--bg-accent, var(--du-bg-accent)); border-color: var(--border-accent, var(--du-border-accent));
-    color: var(--text-accent, var(--du-text-accent)); font-weight:500;
+    background: var(--du-bg-accent); border-color: var(--du-border-accent);
+    color: var(--du-text-accent); font-weight:500;
   }
-  .du-stage-sub { font-size:9px; color: var(--text-muted, var(--du-muted)); margin-top:2px; }
+  .du-stage-sub { font-size:9px; color: var(--du-muted); margin-top:2px; }
 
   /* ── Risk gate row ─────────────────────────────────────────────────────── */
   .du-risk-row { display:flex; gap:5px; flex-wrap:wrap; margin-top:.65rem; }
   .du-risk-chip {
     font-size:10.5px; padding:3px 9px; border-radius:20px;
-    border: 0.5px solid var(--border, var(--du-border)); color: var(--text-secondary, var(--du-text-secondary));
-    font-family: var(--font-sans, var(--du-font-sans)); display:flex; align-items:center; gap:5px;
+    border: 0.5px solid var(--du-border); color: var(--du-text-secondary);
+    font-family: var(--du-font-sans); display:flex; align-items:center; gap:5px;
   }
   .du-risk-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
 
@@ -233,8 +245,8 @@
      mounts with .enter-in and its .stagger-child elements settle in on
      a staggered delay. */
   .du-detail-panel {
-    background: var(--surface-1, var(--du-surface-1)); border-radius: 14px;
-    border: 0.5px solid var(--border, var(--du-border));
+    background: var(--du-surface-1); border-radius: 14px;
+    border: 0.5px solid var(--du-border);
     padding: 1.15rem 1.25rem;
     display: flex; flex-direction: column; gap: 1rem;
     opacity: 1; transform: translateY(0); filter: blur(0);
@@ -253,21 +265,21 @@
 
   .du-detail-head { display:flex; align-items:center; gap:.55rem; }
   .du-detail-icon { font-size:16px; }
-  .du-detail-name { font-size:13.5px; font-weight:500; color: var(--text-primary, var(--du-text)); }
-  .du-detail-body { font-size:12.5px; color: var(--text-secondary, var(--du-text-secondary)); line-height:1.6; }
+  .du-detail-name { font-size:13.5px; font-weight:500; color: var(--du-text); }
+  .du-detail-body { font-size:12.5px; color: var(--du-text-secondary); line-height:1.6; }
   .du-detail-attrs { display:flex; flex-wrap:wrap; gap:5px; }
-  .du-detail-attr { font-size:10.5px; border-radius:4px; padding:2px 7px; border:0.5px solid var(--border, var(--du-border)); color: var(--text-secondary, var(--du-text-secondary)); }
+  .du-detail-attr { font-size:10.5px; border-radius:4px; padding:2px 7px; border:0.5px solid var(--du-border); color: var(--du-text-secondary); }
 
   /* Agent-only sub-panel: the Plan → Review → Approve → Execute lifecycle,
      now revealed only when the Agent Workflow module is the active
      selection, instead of living permanently at the page bottom. */
   .du-detail-divider {
-    border-top: 0.5px solid var(--border, var(--du-border)); padding-top: .85rem; margin-top: .1rem;
+    border-top: 0.5px solid var(--du-border); padding-top: .85rem; margin-top: .1rem;
   }
 
   .du-foot-note {
-    font-size: 11px; color: var(--text-muted, var(--du-muted)); line-height: 1.6;
-    border-top: 0.5px solid var(--border, var(--du-border)); padding-top: .85rem; margin-top: .25rem;
+    font-size: 11px; color: var(--du-muted); line-height: 1.6;
+    border-top: 0.5px solid var(--du-border); padding-top: .85rem; margin-top: .25rem;
   }
 
   @media (max-width: 760px) {
@@ -636,7 +648,7 @@
     wrap.appendChild(label);
 
     const hint = document.createElement('div');
-    hint.style.cssText = 'font-size:11.5px; color:var(--text-secondary, var(--du-text-secondary)); line-height:1.5; margin-bottom:.5rem;';
+    hint.style.cssText = 'font-size:11.5px; color:var(--du-text-secondary); line-height:1.5; margin-bottom:.5rem;';
     hint.textContent = 'Every agent task moves through a transparent, risk-gated lifecycle. Click a stage to see what it means.';
     wrap.appendChild(hint);
 
@@ -662,7 +674,7 @@
 
     const stageDetail = document.createElement('div');
     stageDetail.id = 'du-stage-detail';
-    stageDetail.style.cssText = 'margin-top:.75rem; min-height:32px; font-size:11.5px; color:var(--text-secondary, var(--du-text-secondary)); line-height:1.55; border-top:0.5px solid var(--border, var(--du-border)); padding-top:.55rem;';
+    stageDetail.style.cssText = 'margin-top:.75rem; min-height:32px; font-size:11.5px; color:var(--du-text-secondary); line-height:1.55; border-top:0.5px solid var(--du-border); padding-top:.55rem;';
     stageDetail.textContent = STAGES[activeStage] || '';
     wrap.appendChild(stageDetail);
 
