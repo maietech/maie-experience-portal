@@ -100,7 +100,11 @@ body {
   padding: 0 1.5rem;
   gap: 1.25rem;
   position: sticky;
-  top: var(--mnav-height, 60px);
+  /* Relative to .shell's own scrollport, not the page — .shell already
+     sits below the global nav in normal flow (and is sized to exclude
+     it), so adding --mnav-height here double-counted it and pushed
+     this bar down by an extra 60px even at rest. */
+  top: 0;
   z-index: var(--z-topbar);
 }
 
@@ -161,7 +165,9 @@ body {
   border-right: 1px solid var(--border);
   padding: 1.5rem 0;
   position: sticky;
-  top: calc(var(--mnav-height, 60px) + 52px);
+  /* Same fix as .topbar: relative to .shell, not the page — only the
+     topbar's own 52px matters here, not --mnav-height again. */
+  top: 52px;
   height: calc(100vh - var(--mnav-height, 60px) - 52px); /* fallback */
   height: calc(100dvh - var(--mnav-height, 60px) - 52px);
   overflow-y: auto;
