@@ -1,3 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAIE — Pixie Product Experience</title>
+<!-- html/body wrapper added so this module renders correctly when opened
+     directly as a top-level page, not only when embedded in a host that
+     already paints the viewport dark. Without this, anything past the
+     .pm container's own height falls through to the browser's default
+     white — that's the "white space at the bottom" bug. The module's
+     own --pm-bg token is echoed here to avoid a flash of white before
+     its <style> block parses. -->
+<style>html,body{margin:0;padding:0;min-height:100%;background:#0b0b10;}</style>
+</head>
+<body>
 <!--
   maie_pixie_product_experience_module.html  —  v3 (fluid / cinematic)
 
@@ -1232,3 +1248,5 @@ canvas { display: block; }
 
 })();
 </script>
+</body>
+</html>

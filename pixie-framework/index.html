@@ -1,3 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAIE — Pixie Companion Identity Framework</title>
+<!-- html/body wrapper: .pc-root caps at max-width:1440px and centers
+     itself, so on viewports wider than that the page background outside
+     the column was falling through to browser-default white. Echoing
+     --pc-bg here avoids a white flash before the module's own <style>
+     block parses. -->
+<style>html,body{margin:0;padding:0;min-height:100%;background:#0d0d10;}</style>
+</head>
+<body>
 <style>
   :root {
     --pc-bg: #0d0d10;
@@ -43,6 +57,12 @@
     max-width: 1440px;
     margin: 0 auto;
     min-height: 100vh;
+    /* Sizes off the module's own rendered width instead of the page
+       viewport — same pattern as pixie/index.html v3, so this module
+       stays correct if it's ever dropped into a narrow rail on a wide
+       screen instead of rendered full-bleed. */
+    container-type: inline-size;
+    container-name: pc;
   }
 
   /* Hero */
@@ -223,14 +243,19 @@
   .pc-echo-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--pc-text-secondary); }
   .pc-echo-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
 
-  /* ── Responsive breakpoints adjust the flow ── */
-  @media (max-width: 1024px) {
+  /* ── Responsive breakpoints adjust the flow ──
+     Keyed off the module's own width (container queries) so it responds
+     correctly whether it's full-bleed or dropped into a narrow rail on a
+     wide viewport. Falls back to viewport media queries for browsers
+     without container query support (same fallback pattern used in
+     pixie/index.html v3), so nothing regresses on older browsers. */
+  @container pc (max-width: 1024px) {
     .pc-arch-grid { grid-template-columns: repeat(3, 1fr); }
     .pc-tiers { grid-template-columns: 1fr; }
     .pc-export-row { grid-template-columns: repeat(2, 1fr); }
   }
 
-  @media (max-width: 760px) {
+  @container pc (max-width: 760px) {
     .pc-arch-grid { grid-template-columns: repeat(2, 1fr); }
     .pc-rt-row { grid-template-columns: repeat(3, 1fr); }
     .pc-two-col { grid-template-columns: 1fr; }
@@ -239,10 +264,31 @@
     .pc-theme-row { justify-content: center; }
   }
 
-  @media (max-width: 480px) {
+  @container pc (max-width: 480px) {
     .pc-arch-grid { grid-template-columns: 1fr; }
     .pc-rt-row { grid-template-columns: repeat(2, 1fr); }
     .pc-export-row { grid-template-columns: 1fr; }
+  }
+
+  @supports not (container-type: inline-size) {
+    @media (max-width: 1024px) {
+      .pc-arch-grid { grid-template-columns: repeat(3, 1fr); }
+      .pc-tiers { grid-template-columns: 1fr; }
+      .pc-export-row { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 760px) {
+      .pc-arch-grid { grid-template-columns: repeat(2, 1fr); }
+      .pc-rt-row { grid-template-columns: repeat(3, 1fr); }
+      .pc-two-col { grid-template-columns: 1fr; }
+      .pc-hero { justify-content: center; text-align: center; }
+      .pc-phase-sel { justify-content: center; }
+      .pc-theme-row { justify-content: center; }
+    }
+    @media (max-width: 480px) {
+      .pc-arch-grid { grid-template-columns: 1fr; }
+      .pc-rt-row { grid-template-columns: repeat(2, 1fr); }
+      .pc-export-row { grid-template-columns: 1fr; }
+    }
   }
 </style>
 
@@ -578,3 +624,5 @@
   rebuildPixie();
 })();
 </script>
+</body>
+</html>
