@@ -413,7 +413,14 @@
     background: var(--pc-surface-1);
   }
   .pc-export-icon { font-size:18px; margin-bottom:.35rem; color: var(--pc-text-secondary); }
-  .pc-export-icon img { width:18px; height:18px; display:block; }
+  .icon-mask {
+    display:inline-block; width:18px; height:18px;
+    background-color: currentColor;
+    -webkit-mask-image: var(--icon-src); mask-image: var(--icon-src);
+    -webkit-mask-size: contain; mask-size: contain;
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+    -webkit-mask-position: center; mask-position: center;
+  }
   .pc-export-title { font-size:12px; font-weight:500; color: var(--pc-text); margin-bottom:.2rem; }
   .pc-export-desc { font-size:11px; color: var(--pc-muted); line-height:1.4; }
 
@@ -631,22 +638,22 @@
   <div class="pc-section-label">Export and portability</div>
   <div class="pc-export-row">
     <div class="pc-export-card">
-      <div class="pc-export-icon" aria-hidden="true"><img src="/assets/icons/image.svg" alt=""></div>
+      <div class="pc-export-icon" aria-hidden="true"><span class="icon-mask" style="--icon-src:url(/assets/icons/image.svg)" aria-hidden="true"></span></div>
       <div class="pc-export-title">PNG snapshot</div>
       <div class="pc-export-desc">Lossless canvas capture at any scale via toDataURL()</div>
     </div>
     <div class="pc-export-card">
-      <div class="pc-export-icon" aria-hidden="true"><img src="/assets/icons/loop.svg" alt=""></div>
+      <div class="pc-export-icon" aria-hidden="true"><span class="icon-mask" style="--icon-src:url(/assets/icons/loop.svg)" aria-hidden="true"></span></div>
       <div class="pc-export-title">Animated SVG</div>
       <div class="pc-export-desc">Procedural SVG with CSS keyframes for embedding anywhere</div>
     </div>
     <div class="pc-export-card">
-      <div class="pc-export-icon" aria-hidden="true"><img src="/assets/icons/drag.svg" alt=""></div>
+      <div class="pc-export-icon" aria-hidden="true"><span class="icon-mask" style="--icon-src:url(/assets/icons/drag.svg)" aria-hidden="true"></span></div>
       <div class="pc-export-title">Drag-and-drop</div>
       <div class="pc-export-desc">Native HTML drag events pipe a PNG blob to any drop target</div>
     </div>
     <div class="pc-export-card">
-      <div class="pc-export-icon" aria-hidden="true"><img src="/assets/icons/marketplace.svg" alt=""></div>
+      <div class="pc-export-icon" aria-hidden="true"><span class="icon-mask" style="--icon-src:url(/assets/icons/marketplace.svg)" aria-hidden="true"></span></div>
       <div class="pc-export-title">Marketplace skins</div>
       <div class="pc-export-desc">AGENT_SKIN assets composite onto canvas, clipped to core shape</div>
     </div>

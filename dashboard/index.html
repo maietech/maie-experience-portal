@@ -178,7 +178,14 @@
   }
   .du-module-card.active { border-width: 1px; }
   .du-module-icon { font-size:18px; margin-bottom:.5rem; }
-  .du-module-icon img { width:18px; height:18px; display:block; }
+  .icon-mask {
+    display:inline-block; width:18px; height:18px;
+    background-color: currentColor;
+    -webkit-mask-image: var(--icon-src); mask-image: var(--icon-src);
+    -webkit-mask-size: contain; mask-size: contain;
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+    -webkit-mask-position: center; mask-position: center;
+  }
   .du-module-name { font-size:13px; font-weight:500; color: var(--du-text); margin: 0 0 .25rem; }
   .du-module-role { font-size:11px; color: var(--du-text-secondary); line-height:1.5; }
 
@@ -266,7 +273,7 @@
 
   .du-detail-head { display:flex; align-items:center; gap:.75rem; }
   .du-detail-icon { font-size:18px; }
-  .du-detail-icon img { width:18px; height:18px; display:inline-block; vertical-align:middle; }
+  .du-detail-icon .icon-mask { vertical-align:middle; }
   .du-detail-name { font-size:14.5px; font-weight:500; color: var(--du-text); }
   .du-detail-body { font-size:13px; color: var(--du-text-secondary); line-height:1.7; max-width: 900px; }
   .du-detail-attrs { display:flex; flex-wrap:wrap; gap:8px; }
@@ -615,42 +622,42 @@
   <div class="du-section-label">Dashboard Modules — click to explore</div>
   <div class="du-module-grid" id="du-module-grid">
     <div class="du-module-card active" data-module="agent">
-      <div class="du-module-icon"><img src="/assets/icons/ai.svg" alt=""></div>
+      <div class="du-module-icon"><span class="icon-mask" style="--icon-src:url(/assets/icons/ai.svg)" aria-hidden="true"></span></div>
       <div class="du-module-name">Agent Workflow</div>
       <div class="du-module-role">Plain-language goal → plan → approval → execution. The primary entry point for multi-step AI work.</div>
     </div>
     <div class="du-module-card" data-module="projects">
-      <div class="du-module-icon"><img src="/assets/icons/projects.svg" alt=""></div>
+      <div class="du-module-icon"><span class="icon-mask" style="--icon-src:url(/assets/icons/projects.svg)" aria-hidden="true"></span></div>
       <div class="du-module-name">Recent Projects</div>
       <div class="du-module-role">Live carousel of active projects. Single-click access to any project's media, plans, and processing state.</div>
     </div>
     <div class="du-module-card" data-module="processing">
-      <div class="du-module-icon"><img src="/assets/icons/compute.svg" alt=""></div>
+      <div class="du-module-icon"><span class="icon-mask" style="--icon-src:url(/assets/icons/compute.svg)" aria-hidden="true"></span></div>
       <div class="du-module-name">Processing Status</div>
       <div class="du-module-role">Live tile counts — Pending, Processing, Completed, Failed — across every media file, updated in real time.</div>
     </div>
     <div class="du-module-card" data-module="tokens">
-      <div class="du-module-icon"><img src="/assets/icons/token.svg" alt=""></div>
+      <div class="du-module-icon"><span class="icon-mask" style="--icon-src:url(/assets/icons/token.svg)" aria-hidden="true"></span></div>
       <div class="du-module-name">Token Balance</div>
       <div class="du-module-role">Current balance, today's transaction count, and last-activity timestamp from the platform's token ledger.</div>
     </div>
     <div class="du-module-card" data-module="marketplace">
-      <div class="du-module-icon"><img src="/assets/icons/marketplace.svg" alt=""></div>
+      <div class="du-module-icon"><span class="icon-mask" style="--icon-src:url(/assets/icons/marketplace.svg)" aria-hidden="true"></span></div>
       <div class="du-module-name">Marketplace Assets</div>
       <div class="du-module-role">Six most recently active marketplace assets surfaced directly on the dashboard for zero-friction discovery.</div>
     </div>
     <div class="du-module-card" data-module="activity">
-      <div class="du-module-icon"><img src="/assets/icons/radio.svg" alt=""></div>
+      <div class="du-module-icon"><span class="icon-mask" style="--icon-src:url(/assets/icons/radio.svg)" aria-hidden="true"></span></div>
       <div class="du-module-name">Live Activity Rail</div>
       <div class="du-module-role">Persistent activity panel. Uploads completing, agent plans finishing, assets publishing — in real time, always visible.</div>
     </div>
     <div class="du-module-card" data-module="recommendations">
-      <div class="du-module-icon"><img src="/assets/icons/idea.svg" alt=""></div>
+      <div class="du-module-icon"><span class="icon-mask" style="--icon-src:url(/assets/icons/idea.svg)" aria-hidden="true"></span></div>
       <div class="du-module-name">AI Recommendations</div>
       <div class="du-module-role">Personalised next-step suggestions, each resolved to one concrete Launch action and the correct destination.</div>
     </div>
     <div class="du-module-card" data-module="utility">
-      <div class="du-module-icon"><img src="/assets/icons/utility.svg" alt=""></div>
+      <div class="du-module-icon"><span class="icon-mask" style="--icon-src:url(/assets/icons/utility.svg)" aria-hidden="true"></span></div>
       <div class="du-module-name">Utility Panel</div>
       <div class="du-module-role">Slide-up contextual layer: Help, Features, Projects Guide, Token History, System Status, and the Visual Analysis Tool.</div>
     </div>
@@ -682,7 +689,7 @@
 
   const MODULES = {
     agent: {
-      icon: '<img src="/assets/icons/ai.svg" alt="">', name: 'Agent Workflow',
+      icon: '<span class="icon-mask" style="--icon-src:url(/assets/icons/ai.svg)" aria-hidden="true"></span>', name: 'Agent Workflow',
       sideSlot: 0, tiles: [0,1,2], nucleus: true, railItems: [2,4], sheet: false,
       detail: {
         headline: 'The Conversational Core',
@@ -692,7 +699,7 @@
       }
     },
     projects: {
-      icon: '<img src="/assets/icons/projects.svg" alt="">', name: 'Recent Projects',
+      icon: '<span class="icon-mask" style="--icon-src:url(/assets/icons/projects.svg)" aria-hidden="true"></span>', name: 'Recent Projects',
       sideSlot: 1, tiles: [0], nucleus: false, railItems: [], sheet: false,
       detail: {
         headline: 'Resumption, Not Discovery',
@@ -702,7 +709,7 @@
       }
     },
     processing: {
-      icon: '<img src="/assets/icons/compute.svg" alt="">', name: 'Processing Status',
+      icon: '<span class="icon-mask" style="--icon-src:url(/assets/icons/compute.svg)" aria-hidden="true"></span>', name: 'Processing Status',
       sideSlot: 2, tiles: [0,1], nucleus: false, railItems: [0,1,2,3,4,5], sheet: false,
       detail: {
         headline: 'Operational Transparency at a Glance',
@@ -712,7 +719,7 @@
       }
     },
     tokens: {
-      icon: '<img src="/assets/icons/token.svg" alt="">', name: 'Token Balance',
+      icon: '<span class="icon-mask" style="--icon-src:url(/assets/icons/token.svg)" aria-hidden="true"></span>', name: 'Token Balance',
       sideSlot: 3, tiles: [2], nucleus: false, railItems: [6,7], sheet: false,
       detail: {
         headline: 'A Real Economy, Not a Points System',
@@ -722,7 +729,7 @@
       }
     },
     marketplace: {
-      icon: '<img src="/assets/icons/marketplace.svg" alt="">', name: 'Marketplace Assets',
+      icon: '<span class="icon-mask" style="--icon-src:url(/assets/icons/marketplace.svg)" aria-hidden="true"></span>', name: 'Marketplace Assets',
       sideSlot: 4, tiles: [], nucleus: false, railItems: [3,5], sheet: false,
       detail: {
         headline: 'Discovery Without a Detour',
@@ -732,7 +739,7 @@
       }
     },
     activity: {
-      icon: '<img src="/assets/icons/radio.svg" alt="">', name: 'Live Activity Rail',
+      icon: '<span class="icon-mask" style="--icon-src:url(/assets/icons/radio.svg)" aria-hidden="true"></span>', name: 'Live Activity Rail',
       sideSlot: 5, tiles: [], nucleus: false, railItems: [0,1,2,3,4,5,6,7], sheet: false,
       detail: {
         headline: 'The User Never Wonders if Something Is Happening',
@@ -742,7 +749,7 @@
       }
     },
     recommendations: {
-      icon: '<img src="/assets/icons/idea.svg" alt="">', name: 'AI Recommendations',
+      icon: '<span class="icon-mask" style="--icon-src:url(/assets/icons/idea.svg)" aria-hidden="true"></span>', name: 'AI Recommendations',
       sideSlot: 1, tiles: [], nucleus: true, railItems: [], sheet: false,
       detail: {
         headline: 'Next Steps, Not Generic Upsells',
@@ -752,7 +759,7 @@
       }
     },
     utility: {
-      icon: '<img src="/assets/icons/utility.svg" alt="">', name: 'Utility Panel',
+      icon: '<span class="icon-mask" style="--icon-src:url(/assets/icons/utility.svg)" aria-hidden="true"></span>', name: 'Utility Panel',
       sideSlot: 0, tiles: [], nucleus: false, railItems: [], sheet: true,
       detail: {
         headline: 'The On-Demand Contextual Layer',
