@@ -155,8 +155,12 @@
 
   .pixie-companion-wrap {
     flex-shrink: 0;
-    width: 275px;
-    height: 275px;
+    /* 360px = size(144) * 2.5, matching the cssW/cssH the JS canvas
+       actually renders at (see init call below) — was 275px/size 110,
+       both bumped 30% and kept in lockstep so the box never clips or
+       leaves dead space around the canvas. */
+    width: 360px;
+    height: 360px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -179,7 +183,8 @@
     .hero-row { flex-direction: column; align-items: center; gap: 36px; margin-bottom: 56px; }
     .hero-content { text-align: center; display: flex; flex-direction: column; align-items: center; }
     .hero-sub { max-width: 46ch; }
-    .pixie-companion-wrap { width: 200px; height: 200px; }
+    /* 260px = size(104) * 2.5 — same lockstep pairing as desktop, was 200px/size 80. */
+    .pixie-companion-wrap { width: 260px; height: 260px; }
 
     /* Desktop's cta-card is deliberately centered (it's the odd row-out,
        pointing outward rather than into another module) — but at this
@@ -400,11 +405,19 @@
   // via getPixieThemeColors(), so it just needs a nudge (update() below)
   // whenever the toggle flips those tokens; no separate light/dark
   // branching of its own.
+  //
+  // Size is picked once at load to match .pixie-companion-wrap's box at
+  // the current breakpoint (144 -> 360px canvas desktop, 104 -> 260px
+  // mobile — both the box and this value are 30% up from the original
+  // 275px/200px, 110/80 pairing). Doesn't re-run on resize/orientation
+  // change since the surrounding layout is otherwise static at runtime;
+  // revisit with a matchMedia listener if that stops being true.
   var pixieController = null;
   var pixieCanvas = document.getElementById('hub-pixie-canvas');
   if (pixieCanvas && window.initPixieCompanion) {
+    var pixieSize = window.matchMedia('(max-width: 720px)').matches ? 104 : 144;
     pixieController = window.initPixieCompanion(pixieCanvas, {
-      size: 110,
+      size: pixieSize,
       mode: 'ambient',
       phase: 'idle',
       archetype: 'archivist',
