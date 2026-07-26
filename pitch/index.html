@@ -72,7 +72,16 @@ html, body {
   scroll-behavior: smooth;
   /* No page-level scroll — the scene engine owns navigation entirely. */
   overflow: hidden;
-  height: 100%;
+  /* Was height: 100% — that resolves against the browser's static/large-
+     viewport metric, NOT the same reference every descendant below
+     (.shell, .content, .module) is sized against via 100dvh. On mobile,
+     those two references don't move together as system UI (URL bar,
+     gesture bar) shows/hides, so body's own overflow:hidden — the
+     outermost hard clip in the whole stack — was clipping off a fixed,
+     device-specific gap no amount of safe-area math further down the
+     tree could ever compensate for, since it sat above all of it. */
+  height: 100vh;  /* fallback for browsers without dvh support */
+  height: 100dvh; /* same dynamic-viewport reference as .shell/.content/.module below */
 }
 body {
   font-family: var(--font-ui);
