@@ -3,7 +3,7 @@
 <head>
 <script src="../assets/theme-init.js"></script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>MAIE — Product Experience</title>
 <meta name="description" content="A 12-chapter walkthrough of the MAIE product: the gap it closes, the agent workspace, identity infrastructure, the token economy, and the roadmap ahead.">
 <link rel="canonical" href="https://maietech.github.io/maie-experience-portal/pitch/">
@@ -432,6 +432,15 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: clamp(0.75rem, 1.8vh, 1.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  /* On phones with a gesture-nav bar (iOS home indicator, Android's
+     gesture pill), the OS draws its own bar directly over whatever's
+     at the bottom of the viewport unless the page reserves space for
+     it. viewport-fit=cover (see <meta name="viewport"> in <head>) is
+     what makes env(safe-area-inset-bottom) report a real value instead
+     of always 0; the calc() adds that on top of the existing rhythm
+     rather than replacing it, so desktop/no-inset devices are
+     unaffected (env() with a fallback resolves to 0px there). */
+  padding-bottom: calc(clamp(0.75rem, 1.8vh, 1.5rem) + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -1364,6 +1373,11 @@ body {
   /* ── Chapter nav ────────────────────────────────────── */
   .chapter-nav {
     padding: 0.5rem 1rem;
+    /* Shorthand above resets all four sides, so the safe-area addition
+       from the base rule needs restating here too — this is the rule
+       that's actually active at phone widths, where the gesture-nav
+       overlap happens. */
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
     flex-wrap: wrap; /* prevent overflow when both labels are long */
     gap: 0.5rem;
   }
