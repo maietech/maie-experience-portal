@@ -68,6 +68,20 @@
   --mnav-amber:       #d6a13c;
   --mnav-font:        var(--font-ui);
   --mnav-height:      60px;
+  /* Mobile dropdown sheet + link states — previously hardcoded (a
+     literal near-black hex for the overlay, literal low-alpha reds for
+     the active link) so neither responded to the toggle. The overlay's
+     hardcoded #0b0908 was the worse of the two: in light mode --mnav-
+     text correctly flips to a dark color, but was rendering against
+     that same hardcoded near-black background — dark-on-dark, so the
+     open mobile menu was effectively unreadable in light mode. Active-
+     state alphas are also bumped from .18/.35 to .26/.5 — axe-core
+     measured the old values as barely distinguishable from --mnav-bg's
+     resting state in dark mode. */
+  --mnav-overlay-bg:  var(--bg-alt);
+  --mnav-hover-bg:    rgba(255,255,255,0.05);
+  --mnav-active-bg:   rgba(165,42,42,0.26);
+  --mnav-active-ring: rgba(194,78,78,0.5);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -106,6 +120,16 @@
   --mnav-text:        #1A1410;
   --mnav-muted:       #6b625c;
   --mnav-amber:       #9c7420;
+  /* Light-mode equivalents for the overlay/hover/active tokens above.
+     --mnav-overlay-bg inherits --bg-alt's flip automatically (it's a
+     var reference, not overridden here). Hover/active need their own
+     entries since dark-mode's white-alpha hover would otherwise paint
+     a barely-there white tint on top of an already-white surface, and
+     the active red needs a touch less alpha to stay in AA range
+     against a light surface rather than a dark one. */
+  --mnav-hover-bg:    rgba(0,0,0,0.05);
+  --mnav-active-bg:   rgba(119,46,37,0.14);
+  --mnav-active-ring: rgba(119,46,37,0.32);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
