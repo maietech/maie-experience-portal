@@ -64,6 +64,27 @@
     --du-font-sans:      var(--font-ui);
 
     --du-ease-cinematic: var(--ease-cinematic);
+
+    /* ── Cockpit mockup — was hardcoded to dark-only hex/white-alpha,
+       so it stayed a black box in light mode. These default to the
+       original dark-mode values; light-mode overrides live below. */
+    --du-cockpit-bg:            #0c0d10;
+    --du-cockpit-border:        rgba(255,255,255,0.1);
+    --du-cockpit-shadow:        rgba(0,0,0,0.5);
+    --du-cockpit-chrome-bg:     rgba(255,255,255,0.018);
+    --du-cockpit-chrome-border: rgba(255,255,255,0.07);
+    --du-cockpit-dot:           rgba(255,255,255,0.15);
+    --du-cockpit-label:         rgba(232,230,227,0.32);
+    --du-cockpit-side-bg:       rgba(255,255,255,0.02);
+    --du-cockpit-side-border:   rgba(255,255,255,0.06);
+    --du-cockpit-icon-bg:       rgba(255,255,255,0.07);
+    --du-cockpit-tile-bg:       rgba(255,255,255,0.032);
+    --du-cockpit-tile-border:   rgba(255,255,255,0.058);
+    --du-cockpit-tile-label:    rgba(232,230,227,0.34);
+    --du-cockpit-tile-val:      rgba(232,230,227,0.85);
+    --du-cockpit-nucleus-bg:    rgba(255,255,255,0.018);
+    --du-cockpit-rail-item:     rgba(255,255,255,0.06);
+    --du-cockpit-sheet-bg:      rgba(255,255,255,0.025);
   }
   [data-theme="light"] {
     --du-surface-0: rgba(0,0,0,0.015);
@@ -73,6 +94,26 @@
        reason (4.37-4.49:1 measured against the same accent-tinted stage
        backgrounds); 0.66 clears 4.89-5.03:1. */
     --du-text-secondary: rgba(17,19,24,0.66);
+
+    /* Cockpit mockup, light-mode equivalents — same structure, tuned
+       for a light chrome instead of inverting to pure white-on-white. */
+    --du-cockpit-bg:            #F4F1EE;
+    --du-cockpit-border:        rgba(0,0,0,0.12);
+    --du-cockpit-shadow:        rgba(0,0,0,0.16);
+    --du-cockpit-chrome-bg:     rgba(0,0,0,0.03);
+    --du-cockpit-chrome-border: rgba(0,0,0,0.09);
+    --du-cockpit-dot:           rgba(0,0,0,0.18);
+    --du-cockpit-label:         rgba(17,19,24,0.45);
+    --du-cockpit-side-bg:       rgba(0,0,0,0.025);
+    --du-cockpit-side-border:   rgba(0,0,0,0.08);
+    --du-cockpit-icon-bg:       rgba(0,0,0,0.09);
+    --du-cockpit-tile-bg:       rgba(0,0,0,0.035);
+    --du-cockpit-tile-border:   rgba(0,0,0,0.09);
+    --du-cockpit-tile-label:    rgba(17,19,24,0.48);
+    --du-cockpit-tile-val:      rgba(17,19,24,0.88);
+    --du-cockpit-nucleus-bg:    rgba(0,0,0,0.025);
+    --du-cockpit-rail-item:     rgba(0,0,0,0.09);
+    --du-cockpit-sheet-bg:      rgba(0,0,0,0.035);
   }
   body {
     margin: 0;
@@ -138,37 +179,38 @@
   .du-cockpit-wrap { flex-shrink:0; position:relative; z-index:1; width: 100%; max-width: 380px; }
   .du-cockpit {
     width: 100%;
-    background: #0c0d10;
-    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--du-cockpit-bg);
+    border: 1px solid var(--du-cockpit-border);
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    box-shadow: 0 20px 50px var(--du-cockpit-shadow);
     font-family: var(--du-font-sans);
+    transition: background .22s ease, border-color .22s ease, box-shadow .22s ease;
   }
   .du-cockpit-chrome {
     display:flex; align-items:center; gap:6px;
-    padding:8px 12px; background: rgba(255,255,255,0.018); border-bottom:1px solid rgba(255,255,255,0.07);
+    padding:8px 12px; background: var(--du-cockpit-chrome-bg); border-bottom:1px solid var(--du-cockpit-chrome-border);
   }
-  .du-cockpit-dot { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,0.15); }
-  .du-cockpit-label { font-family: var(--font-mono, monospace); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:rgba(232,230,227,0.32); margin-left:4px; }
+  .du-cockpit-dot { width:7px; height:7px; border-radius:50%; background:var(--du-cockpit-dot); }
+  .du-cockpit-label { font-family: var(--font-mono, monospace); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--du-cockpit-label); margin-left:4px; }
   .du-cockpit-body { display:flex; height:198px; }
   .du-cockpit-side {
-    width: 36px; background: rgba(255,255,255,0.02); border-right:1px solid rgba(255,255,255,0.06);
+    width: 36px; background: var(--du-cockpit-side-bg); border-right:1px solid var(--du-cockpit-side-border);
     display:flex; flex-direction:column; align-items:center; gap:10px; padding-top:12px;
   }
-  .du-cockpit-side-icon { width:16px; height:16px; border-radius:4px; background:rgba(255,255,255,0.07); transition: background .2s, box-shadow .2s; }
+  .du-cockpit-side-icon { width:16px; height:16px; border-radius:4px; background:var(--du-cockpit-icon-bg); transition: background .2s, box-shadow .2s; }
   .du-cockpit-side-icon.on { background: var(--du-brand-light); box-shadow:0 0 8px rgba(194,78,78,.5); }
   .du-cockpit-main { flex:1; padding:12px; display:flex; flex-direction:column; gap:8px; min-width:0; }
   .du-cockpit-tilerow { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
   .du-cockpit-tile {
-    background: rgba(255,255,255,0.032); border:1px solid rgba(255,255,255,0.058); border-radius:6px;
+    background: var(--du-cockpit-tile-bg); border:1px solid var(--du-cockpit-tile-border); border-radius:6px;
     padding:8px; transition: border-color .2s, background .2s, transform .2s;
   }
   .du-cockpit-tile.on { border-color: rgba(165,42,42,0.5); background: rgba(165,42,42,0.14); transform: translateY(-1px); }
-  .du-cockpit-tile-label { font-family: var(--font-mono, monospace); font-size:7px; letter-spacing:.06em; text-transform:uppercase; color:rgba(232,230,227,0.34); }
-  .du-cockpit-tile-val { font-family: var(--font-mono, monospace); font-size:12px; font-weight:600; color:rgba(232,230,227,0.85); margin-top:3px; }
+  .du-cockpit-tile-label { font-family: var(--font-mono, monospace); font-size:7px; letter-spacing:.06em; text-transform:uppercase; color:var(--du-cockpit-tile-label); }
+  .du-cockpit-tile-val { font-family: var(--font-mono, monospace); font-size:12px; font-weight:600; color:var(--du-cockpit-tile-val); margin-top:3px; }
   .du-cockpit-nucleus {
-    flex:1; border-radius:8px; background: rgba(255,255,255,0.018); border:1px solid rgba(255,255,255,0.058);
+    flex:1; border-radius:8px; background: var(--du-cockpit-nucleus-bg); border:1px solid var(--du-cockpit-tile-border);
     display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;
     transition: border-color .2s;
   }
@@ -176,13 +218,13 @@
   .du-cockpit-orb-canvas { width:56px; height:56px; opacity:.9; transition: opacity .3s; }
   .du-cockpit-nucleus.on .du-cockpit-orb-canvas { opacity:1; }
   .du-cockpit-rail {
-    width: 48px; background: rgba(255,255,255,0.02); border-left:1px solid rgba(255,255,255,0.06);
+    width: 48px; background: var(--du-cockpit-side-bg); border-left:1px solid var(--du-cockpit-side-border);
     display:flex; flex-direction:column; gap:5px; padding:10px 8px;
   }
-  .du-cockpit-rail-item { height:8px; border-radius:4px; background:rgba(255,255,255,0.06); transition: background .2s; }
+  .du-cockpit-rail-item { height:8px; border-radius:4px; background:var(--du-cockpit-rail-item); transition: background .2s; }
   .du-cockpit-rail-item.on { background: var(--du-green); box-shadow: 0 0 5px rgba(91,154,111,.5); }
   .du-cockpit-sheet {
-    height: 0; background: rgba(255,255,255,0.025); border-top: 1px solid rgba(165,42,42,0.4);
+    height: 0; background: var(--du-cockpit-sheet-bg); border-top: 1px solid rgba(165,42,42,0.4);
     overflow:hidden; transition: height .35s cubic-bezier(.4,0,.2,1);
     display:flex; align-items:center; justify-content:center;
   }
@@ -657,9 +699,9 @@
               </div>
               <!-- Project carousel placeholder -->
               <div style="display:flex; gap:5px;">
-                <div style="flex:1; height:22px; border-radius:5px; background:rgba(255,255,255,0.032); border:1px solid rgba(255,255,255,0.058);"></div>
-                <div style="flex:1; height:22px; border-radius:5px; background:rgba(255,255,255,0.032); border:1px solid rgba(255,255,255,0.058);"></div>
-                <div style="flex:1; height:22px; border-radius:5px; background:rgba(255,255,255,0.032); border:1px solid rgba(255,255,255,0.058);"></div>
+                <div style="flex:1; height:22px; border-radius:5px; background:var(--du-cockpit-tile-bg); border:1px solid var(--du-cockpit-tile-border);"></div>
+                <div style="flex:1; height:22px; border-radius:5px; background:var(--du-cockpit-tile-bg); border:1px solid var(--du-cockpit-tile-border);"></div>
+                <div style="flex:1; height:22px; border-radius:5px; background:var(--du-cockpit-tile-bg); border:1px solid var(--du-cockpit-tile-border);"></div>
               </div>
             </div>
             <!-- Live activity rail -->

@@ -137,8 +137,31 @@
     line-height: 1.6;
     color: var(--muted);
     max-width: 52ch;
+    margin: 0;
+  }
+
+  /* Hero row: text on the left, Pixie floating to its right on larger
+     viewports. On small viewports this stacks to a single centered
+     column — hero text, then Pixie, then the grid — per the mobile
+     layout below. */
+  .hero-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 48px;
     margin-bottom: 64px;
   }
+  .hero-content { flex: 1; min-width: 0; }
+
+  .pixie-companion-wrap {
+    flex-shrink: 0;
+    width: 275px;
+    height: 275px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #hub-pixie-canvas { display: block; }
 
   .grid {
     display: grid;
@@ -152,6 +175,18 @@
     .grid { grid-template-columns: 1fr; }
     header { padding: 22px 24px; }
     main { padding: 56px 20px 80px; }
+
+    .hero-row { flex-direction: column; align-items: center; gap: 36px; margin-bottom: 56px; }
+    .hero-content { text-align: center; display: flex; flex-direction: column; align-items: center; }
+    .hero-sub { max-width: 46ch; }
+    .pixie-companion-wrap { width: 200px; height: 200px; }
+
+    /* Desktop's cta-card is deliberately centered (it's the odd row-out,
+       pointing outward rather than into another module) — but at this
+       width that reads as floaty next to everything else on the page
+       going left-aligned, so it switches to match. */
+    .cta-card { text-align: left; align-items: flex-start; }
+    .cta-card .card-kicker { justify-content: flex-start; }
   }
 
   .card {
@@ -276,12 +311,19 @@
 </header>
 
 <main>
-  <div class="hero-kicker">Product Experience Hub</div>
-  <h1>Four ways in. One production memory layer.</h1>
-  <p class="hero-sub">
-    Each module stands on its own — pick the one that matches who you're talking to,
-    not a chapter order to work through top to bottom.
-  </p>
+  <div class="hero-row">
+    <div class="hero-content">
+      <div class="hero-kicker">Product Experience Hub</div>
+      <h1>Four ways in. One production memory layer.</h1>
+      <p class="hero-sub">
+        Each module stands on its own — pick the one that matches who you're talking to,
+        not a chapter order to work through top to bottom.
+      </p>
+    </div>
+    <div class="pixie-companion-wrap" aria-hidden="true">
+      <canvas id="hub-pixie-canvas"></canvas>
+    </div>
+  </div>
 
   <div class="grid">
     <a class="card" href="pitch/" style="--kicker-color: var(--brand-light);">
@@ -330,6 +372,7 @@
   MAIE — a Midwest Media Alliance production tool
 </footer>
 
+<script src="assets/pixie-companion.js"></script>
 <script>
 (function () {
   // Theme toggle — same markup/logic as nav-component.html's, reused here
@@ -353,6 +396,23 @@
   }
   renderTheme();
 
+  // Pixie companion — reads --brand-light/--accent off the current theme
+  // via getPixieThemeColors(), so it just needs a nudge (update() below)
+  // whenever the toggle flips those tokens; no separate light/dark
+  // branching of its own.
+  var pixieController = null;
+  var pixieCanvas = document.getElementById('hub-pixie-canvas');
+  if (pixieCanvas && window.initPixieCompanion) {
+    pixieController = window.initPixieCompanion(pixieCanvas, {
+      size: 110,
+      mode: 'ambient',
+      phase: 'idle',
+      archetype: 'archivist',
+      temperament: 'idle',
+      theme: window.getPixieThemeColors ? window.getPixieThemeColors() : null,
+    });
+  }
+
   if (themeBtn) {
     themeBtn.addEventListener('click', function () {
       var isDark = document.documentElement.getAttribute('data-theme') !== 'light';
@@ -360,6 +420,9 @@
       document.documentElement.setAttribute('data-theme', next);
       try { localStorage.setItem('maie-theme', next); } catch (e) {}
       renderTheme();
+      if (pixieController && window.getPixieThemeColors) {
+        pixieController.update({ theme: window.getPixieThemeColors() });
+      }
     });
   }
 })();
