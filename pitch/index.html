@@ -268,7 +268,14 @@ body {
   /* Viewport stage: exactly fills the grid cell below the topbar. */
   overflow: hidden;
   height: calc(100vh - var(--mnav-height, 60px) - 52px); /* fallback */
-  height: calc(100dvh - var(--mnav-height, 60px) - 52px);
+  /* The safe-area subtraction here is what actually matters: 100dvh
+     with viewport-fit=cover extends to the physical bottom edge of the
+     screen (behind a phone's gesture bar), and .module below is a
+     hard-clipped fixed-height box — padding added *inside* it can only
+     ever eat into its own flex siblings' space, not grow the box. This
+     is what gives that padding somewhere to land instead of being
+     absorbed or clipped. */
+  height: calc(100dvh - var(--mnav-height, 60px) - 52px - env(safe-area-inset-bottom, 0px));
   position: relative;
 }
 
@@ -283,7 +290,7 @@ body {
   position: absolute;
   inset: 0;
   height: calc(100vh - var(--mnav-height, 60px) - 52px); /* fallback */
-  height: calc(100dvh - var(--mnav-height, 60px) - 52px);
+  height: calc(100dvh - var(--mnav-height, 60px) - 52px - env(safe-area-inset-bottom, 0px));
   flex-direction: column;
   overflow: hidden; /* outer clip is hard */
 }
@@ -1357,9 +1364,9 @@ body {
 
   /* ── Content stage ──────────────────────────────────── */
   .content { height: calc(100vh - 52px - 44px); } /* fallback */
-  .content { height: calc(100dvh - 52px - 44px); } /* topbar + sidenav strip */
+  .content { height: calc(100dvh - 52px - 44px - env(safe-area-inset-bottom, 0px)); } /* topbar + sidenav strip */
   .module  { height: calc(100vh - 52px - 44px); } /* fallback */
-  .module  { height: calc(100dvh - 52px - 44px); }
+  .module  { height: calc(100dvh - 52px - 44px - env(safe-area-inset-bottom, 0px)); }
 
   /* ── Module headers: topbar label takes over ────────── */
   .mod-header { display: none; }
