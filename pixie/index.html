@@ -836,6 +836,51 @@ canvas { display: block; }
   .wf-container { grid-template-columns: 1fr; }
   .wf-left { flex-direction: row; justify-content: center; }
   .wf-detail { min-height: 0; }
+
+  /* ── Sticky Pixie header (mobile only) ─────────────────────────
+     .wf-left stays a normal, in-flow grid row until JS (below)
+     flags it .wf-pinned via IntersectionObserver watching #wf-pin-
+     sentinel. We use position:sticky rather than fixed so no spacer
+     element is needed to preserve layout height — it naturally
+     unsticks once .wf-container (its containing block) scrolls past.
+     `top` is set from JS (--wf-pin-offset), computed off the real
+     .mnav height at runtime rather than hardcoding var(--mnav-height)
+     here, since that token can drift from the nav's actual rendered
+     height (padding/border) in ways a CSS var alone won't catch. */
+  .wf-left {
+    position: sticky;
+    top: var(--wf-pin-offset, 60px);
+    z-index: 5;
+    padding: 6px 8px;
+    border-radius: 12px;
+    transition: padding .3s var(--pm-ease-cinematic),
+                background .3s var(--pm-ease-cinematic),
+                box-shadow .3s var(--pm-ease-cinematic),
+                border-color .3s var(--pm-ease-cinematic);
+  }
+
+  .wf-left.wf-pinned {
+    background: var(--pm-surface-1);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 0.5px solid var(--pm-border);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.16);
+  }
+
+  /* The orb-wrap's max-width is toggled inline by JS (it already
+     carries an inline max-width from the markup, which would beat
+     any class-based rule here on specificity alone) — this rule only
+     supplies the transition timing so that inline-style change
+     animates instead of snapping. */
+  .wf-left .pm-orb-wrap.pm-orb--workflow {
+    transition: max-width .35s var(--pm-ease-cinematic);
+  }
+
+  .wf-left #wf-phase-label,
+  .wf-left #wf-progress-outer {
+    transition: opacity .3s var(--pm-ease-cinematic);
+  }
+  .wf-left.wf-pinned #wf-phase-label { opacity: .85; }
 }
 @container pm (max-width: 560px) {
   .pm-section { padding: 1rem; }
@@ -860,6 +905,37 @@ canvas { display: block; }
 @media (max-width: 820px) {
   .wf-container { grid-template-columns: 1fr; }
   .wf-left { flex-direction: row; justify-content: center; }
+
+  /* Duplicated from the @container block above (not shared via a
+     selector list) because this whole block only fires when the
+     browser lacks container-query support — see the comment on the
+     @container rules for why the two must stay separate blocks. */
+  .wf-left {
+    position: sticky;
+    top: var(--wf-pin-offset, 60px);
+    z-index: 5;
+    padding: 6px 8px;
+    border-radius: 12px;
+    transition: padding .3s var(--pm-ease-cinematic),
+                background .3s var(--pm-ease-cinematic),
+                box-shadow .3s var(--pm-ease-cinematic),
+                border-color .3s var(--pm-ease-cinematic);
+  }
+  .wf-left.wf-pinned {
+    background: var(--pm-surface-1);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 0.5px solid var(--pm-border);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.16);
+  }
+  .wf-left .pm-orb-wrap.pm-orb--workflow {
+    transition: max-width .35s var(--pm-ease-cinematic);
+  }
+  .wf-left #wf-phase-label,
+  .wf-left #wf-progress-outer {
+    transition: opacity .3s var(--pm-ease-cinematic);
+  }
+  .wf-left.wf-pinned #wf-phase-label { opacity: .85; }
 }
 @media (max-width: 560px) {
   .pm-section { padding: 1rem; }
@@ -876,6 +952,15 @@ canvas { display: block; }
 
 @media (prefers-reduced-motion: reduce) {
   .pm-view, .wf-detail, .wf-stage, .pm-reveal {
+    transition-duration: .01ms !important;
+  }
+  /* Sticky pin still happens (it's positional, not decorative) but
+     every cinematic side-effect of pinning — shrink, blur fade-in,
+     label fade — snaps instantly instead of animating. */
+  .wf-left,
+  .wf-left .pm-orb-wrap.pm-orb--workflow,
+  .wf-left #wf-phase-label,
+  .wf-left #wf-progress-outer {
     transition-duration: .01ms !important;
   }
 }
@@ -955,6 +1040,11 @@ canvas { display: block; }
         <span id="wf-auto-label">Play full demo</span>
       </button>
     </div>
+
+    <!-- Sentinel purely for the sticky-pin IntersectionObserver below —
+         zero-height, stays in normal flow immediately above .wf-left,
+         so its scroll position marks exactly where .wf-left starts. -->
+    <div id="wf-pin-sentinel" aria-hidden="true" style="height:0;"></div>
 
     <div class="wf-container">
       <div class="wf-left">
@@ -1343,6 +1433,92 @@ canvas { display: block; }
     staticFallback('c-wf', '#38BDF8');
     staticFallback('c-agents', '#22C55E');
   }
+
+  /* ── Sticky Pixie header, mobile only ────────────────────────────
+     Wraps the already-initialized #c-wf canvas (pWf, or its static
+     fallback — either way we never touch engine/makePixie here).
+     .wf-left is sticky-positioned in CSS at all times below 820px;
+     this just toggles .wf-pinned (for the surface/blur/shadow
+     treatment) and shrinks the orb, once the sentinel above
+     .wf-left has scrolled past the nav. */
+  (function setupStickyPixieHeader() {
+    var wfLeft = document.querySelector('.wf-left');
+    var sentinel = document.getElementById('wf-pin-sentinel');
+    var orbWrap = wfLeft && wfLeft.querySelector('.pm-orb-wrap.pm-orb--workflow');
+    var nav = document.querySelector('.mnav');
+    if (!wfLeft || !sentinel || typeof IntersectionObserver === 'undefined') return;
+
+    var ORB_MAX_WIDTH_EXPANDED = '104px'; // matches the inline style already on .pm-orb-wrap
+    var ORB_MAX_WIDTH_PINNED = '64px';
+    var mqPinnable = window.matchMedia('(max-width: 820px)');
+    var io = null;
+
+    function pinOffset() {
+      // Real rendered nav height (not the --mnav-height token) plus a
+      // small gap, so the pinned orb never sits flush under the nav.
+      var navH = nav ? nav.getBoundingClientRect().height : 60;
+      return Math.round(navH + 8);
+    }
+
+    function applyPinOffset() {
+      wfLeft.style.setProperty('--wf-pin-offset', pinOffset() + 'px');
+    }
+
+    function setPinned(pinned) {
+      var isPinned = wfLeft.classList.contains('wf-pinned');
+      if (pinned === isPinned) return;
+      wfLeft.classList.toggle('wf-pinned', pinned);
+      if (orbWrap) {
+        orbWrap.style.maxWidth = pinned ? ORB_MAX_WIDTH_PINNED : ORB_MAX_WIDTH_EXPANDED;
+      }
+    }
+
+    function handleIntersect(entries) {
+      if (!mqPinnable.matches) { setPinned(false); return; }
+      entries.forEach(function (entry) {
+        // Sentinel sits just above .wf-left. Once it's scrolled fully
+        // above the observer root (isIntersecting === false, and its
+        // box is above rather than below the viewport), .wf-left has
+        // reached the point where it would otherwise scroll out of
+        // view — that's exactly when we want it pinned.
+        setPinned(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+      });
+    }
+
+    function startObserving() {
+      if (io) io.disconnect();
+      applyPinOffset();
+      io = new IntersectionObserver(handleIntersect, {
+        root: null,
+        // Negative top margin equal to the nav height means the
+        // sentinel is treated as "out of view" the moment it passes
+        // under the nav, not only once it's fully off-screen.
+        rootMargin: '-' + pinOffset() + 'px 0px 0px 0px',
+        threshold: 0,
+      });
+      io.observe(sentinel);
+    }
+
+    startObserving();
+
+    // matchMedia listener: immediately un-pin (and stop observing
+    // implications) if the viewport grows past the mobile breakpoint.
+    var mqHandler = function () {
+      if (!mqPinnable.matches) setPinned(false);
+    };
+    if (mqPinnable.addEventListener) mqPinnable.addEventListener('change', mqHandler);
+    else if (mqPinnable.addListener) mqPinnable.addListener(mqHandler); // Safari <14
+
+    // Nav height can change (e.g. mobile menu opening/closing) — keep
+    // the pin offset in sync, and rebuild the observer's rootMargin
+    // since IntersectionObserver can't have rootMargin updated live.
+    if (nav && 'ResizeObserver' in window) {
+      var ro = new ResizeObserver(function () { startObserving(); });
+      ro.observe(nav);
+    } else {
+      window.addEventListener('resize', startObserving);
+    }
+  })();
 
   /* ── Cinematic section switch ──────────────────────────────────
      Outgoing .pm-view fades/blurs out; once settled it's hidden and
