@@ -177,17 +177,19 @@
   .du-hero-sub { font-size:14px; color: var(--du-muted); line-height:1.6; margin:0; max-width:480px; }
 
   /* ── Live cockpit replica ──────────────────────────────────────────── */
-  /* .du-cockpit-wrap is now a reserved "slot": it holds .du-hero-top's
-     flex space at a fixed height (set live by JS via ResizeObserver,
-     since the sheet opening to 48px means the cockpit's natural height
-     isn't perfectly constant) so that when .du-cockpit itself flips to
-     position:fixed for the pinned-corner state, nothing around it
-     reflows — the slot never changes size, only what's positioned
-     inside it does. */
+  /* .du-cockpit-wrap stays a normal auto-height flex child in the
+     unpinned state — .du-cockpit sits in normal document flow inside
+     it, same as before this feature existed, so the wrap always sizes
+     itself off the cockpit's real content and the cockpit is visible
+     immediately. It's only pinning (JS adding .du-pinned, see below)
+     that switches .du-cockpit to position:fixed — and JS sets an
+     explicit height on .du-cockpit-wrap at that exact moment (from a
+     measurement taken the instant before the switch), so the hero's
+     flex row doesn't collapse once its child leaves flow. Unpinning
+     clears that inline height again, returning the wrap to auto. */
   .du-cockpit-wrap { flex-shrink:0; position:relative; z-index:1; width: 100%; max-width: 380px; }
   .du-cockpit {
-    position: absolute;
-    inset: 0;
+    width: 100%;
     background: var(--du-cockpit-bg);
     border: 1px solid var(--du-cockpit-border);
     border-radius: 12px;
@@ -201,7 +203,6 @@
   /* ── Pinned corner state ── */
   .du-cockpit.du-pinned {
     position: fixed;
-    inset: auto;
     right: 20px;
     bottom: 20px;
     width: 380px;                 /* stable box for transform:scale to shrink from */
@@ -1242,10 +1243,16 @@
   // scrolled out of view, so the Recommended orb/tiles stay visible
   // while the user clicks through .du-module-card buttons below.
   //
-  // .du-cockpit-wrap is a fixed-size *slot* (see CSS); .du-cockpit sits
-  // at position:absolute; inset:0 inside it normally, and only flips to
-  // position:fixed for the pinned state — so nothing in .du-hero-top
-  // ever reflows, regardless of which state the cockpit is in.
+  // .du-cockpit stays in NORMAL FLOW inside .du-cockpit-wrap at all
+  // times except while actively pinned — it's never position:absolute
+  // by default. That matters: an always-absolute child stops
+  // contributing to its parent's auto height, which collapsed
+  // .du-cockpit-wrap to 0px and made the cockpit invisible until pinned
+  // (the bug in the previous version of this code). Instead, the wrap
+  // only gets an explicit inline height at the exact moment we pin —
+  // measured from the cockpit's own rendered size right before it
+  // leaves flow — and that height is cleared again on unpin, letting
+  // the wrap return to sizing itself off the cockpit naturally.
   (function setupStickyCockpit() {
     const wrap = document.querySelector('.du-cockpit-wrap');
     const cockpit = document.getElementById('du-cockpit');
@@ -1253,12 +1260,24 @@
     if (!wrap || !cockpit || !sentinel || typeof IntersectionObserver === 'undefined') return;
 
     const mqPinnable = window.matchMedia('(min-width: 481px)');
-    let io = null;
 
     function setPinned(pinned) {
       const isPinned = cockpit.classList.contains('du-pinned');
       if (pinned === isPinned) return;
-      cockpit.classList.toggle('du-pinned', pinned);
+
+      if (pinned) {
+        // Measure while still in normal flow, then reserve that exact
+        // footprint on the wrap before the cockpit leaves flow —
+        // otherwise the wrap collapses for a frame (or permanently,
+        // per the bug above) and .du-hero-top reflows underneath it.
+        const rect = cockpit.getBoundingClientRect();
+        wrap.style.height = rect.height + 'px';
+        cockpit.classList.add('du-pinned');
+      } else {
+        cockpit.classList.remove('du-pinned');
+        wrap.style.height = '';
+      }
+
       cockpit.setAttribute('aria-label', pinned
         ? 'Live miniature replica of the MAIE Dashboard (pinned — click to return to top)'
         : 'Live miniature replica of the MAIE Dashboard');
@@ -1274,22 +1293,8 @@
       });
     }
 
-    io = new IntersectionObserver(handleIntersect, { root: null, threshold: 0 });
+    const io = new IntersectionObserver(handleIntersect, { root: null, threshold: 0 });
     io.observe(sentinel);
-
-    // Keep the slot's reserved height in sync with the cockpit's actual
-    // rendered height (the utility sheet opening to 48px changes it),
-    // so unpinning never causes a layout jump either.
-    if ('ResizeObserver' in window) {
-      const ro = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          if (!cockpit.classList.contains('du-pinned')) {
-            wrap.style.height = entry.contentRect.height + 'px';
-          }
-        }
-      });
-      ro.observe(cockpit);
-    }
 
     const mqHandler = () => { if (!mqPinnable.matches) setPinned(false); };
     if (mqPinnable.addEventListener) mqPinnable.addEventListener('change', mqHandler);
