@@ -539,7 +539,10 @@
     background: var(--pc-static-core, #8B5CF6);
   }
 
-  /* ── Pinned corner state (shared by canvas + static glyph) ── */
+  /* ── Pinned corner state (shared by canvas + static glyph) ──────────
+     Sizes step up on larger viewports, same idea as the dashboard's
+     cockpit, so the pinned pixie doesn't stay a fixed ~65px regardless
+     of how much screen is available. */
   #live-pixie-canvas.pc-pinned,
   .pc-orb-static.pc-pinned {
     position: fixed;
@@ -553,15 +556,74 @@
     box-shadow: 0 10px 28px rgba(0,0,0,0.35);
     cursor: pointer;
     background: var(--pc-bg);
+    /* Hover gets its own bouncy --spring timing rather than the
+       --pc-ease-cinematic used for the pin/unpin move itself — a
+       living companion reacting to a cursor should feel springy and
+       a little alive, not mechanically eased like a UI panel docking. */
+    transition: right .5s var(--pc-ease-cinematic, var(--ease-cinematic)),
+                bottom .5s var(--pc-ease-cinematic, var(--ease-cinematic)),
+                transform .38s var(--spring);
   }
+  @media (min-width: 1000px) {
+    #live-pixie-canvas.pc-pinned, .pc-orb-static.pc-pinned { transform: scale(0.65); }
+  }
+  @media (min-width: 1400px) {
+    #live-pixie-canvas.pc-pinned, .pc-orb-static.pc-pinned { transform: scale(0.8); }
+  }
+
+  /* Hover: a springy little "hop" toward the cursor rather than the
+     dashboard's deliberate mechanical pop — matches a companion
+     noticing you, not a panel expanding. */
   #live-pixie-canvas.pc-pinned:hover,
-  .pc-orb-static.pc-pinned:hover { transform: scale(0.54); }
+  .pc-orb-static.pc-pinned:hover {
+    transform: scale(0.72);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+  }
+  @media (min-width: 1000px) {
+    #live-pixie-canvas.pc-pinned:hover, .pc-orb-static.pc-pinned:hover { transform: scale(0.9); }
+  }
+  @media (min-width: 1400px) {
+    #live-pixie-canvas.pc-pinned:hover, .pc-orb-static.pc-pinned:hover { transform: scale(1.05); }
+  }
 
   @media (max-width: 480px) {
     #live-pixie-canvas.pc-pinned,
     .pc-orb-static.pc-pinned {
       position: absolute; inset: 0; transform: none; right: auto; bottom: auto; cursor: default;
     }
+  }
+
+  /* ── Pin/unpin glow bloom ─────────────────────────────────────────
+     A soft radial pulse in the pixie's OWN current archetype color
+     (--pc-flash-color, kept live by rebuildPixie() in the script
+     below) rather than a fixed brand hue or the dashboard's hard-
+     edged spinning ring — meant to read as the companion itself
+     flickering/glimmering for a moment, not a UI chrome effect.
+     Sits on .pc-canvas-wrap (not the canvas/glyph) so it isn't
+     clipped by the orb's own border-radius and can bloom outward
+     past its edge. Dormant until JS adds .pc-pin-flash; removed again
+     once the pulse finishes. */
+  .pc-canvas-wrap {
+    --pc-flash-color: #8B5CF6;
+  }
+  .pc-canvas-wrap::after {
+    content: '';
+    position: absolute;
+    inset: -18px;
+    border-radius: 50%;
+    background: radial-gradient(circle, color-mix(in srgb, var(--pc-flash-color) 55%, transparent) 0%, transparent 70%);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 79;               /* just under the pinned orb's z-index:80 so it reads as a halo behind it */
+    transform: scale(0.7);
+  }
+  .pc-canvas-wrap.pc-pin-flash::after {
+    animation: pc-glow-bloom 800ms var(--spring);
+  }
+  @keyframes pc-glow-bloom {
+    0%   { opacity: 0;   transform: scale(0.6); }
+    30%  { opacity: 0.9; transform: scale(1.15); }
+    100% { opacity: 0;   transform: scale(1.7); }
   }
 
   /* Sticky phase selector */
@@ -669,10 +731,21 @@
     .pc-phase-btn, .pc-theme-swatch, .pc-arch-card {
       transition-duration: .01ms !important;
     }
-    /* Pinning still happens, but snaps instantly instead of easing. */
+    /* Pinning still happens, but snaps instantly instead of easing,
+       the hover hop is dropped back to the resting scale, and the
+       glow bloom never animates at all. */
     #live-pixie-canvas, .pc-orb-static { transition-duration: .01ms !important; }
-    #live-pixie-canvas.pc-pinned:hover,
-    .pc-orb-static.pc-pinned:hover { transform: scale(0.5); }
+    #live-pixie-canvas.pc-pinned, .pc-orb-static.pc-pinned,
+    #live-pixie-canvas.pc-pinned:hover, .pc-orb-static.pc-pinned:hover { transform: scale(0.5); }
+    @media (min-width: 1000px) {
+      #live-pixie-canvas.pc-pinned, .pc-orb-static.pc-pinned,
+      #live-pixie-canvas.pc-pinned:hover, .pc-orb-static.pc-pinned:hover { transform: scale(0.65); }
+    }
+    @media (min-width: 1400px) {
+      #live-pixie-canvas.pc-pinned, .pc-orb-static.pc-pinned,
+      #live-pixie-canvas.pc-pinned:hover, .pc-orb-static.pc-pinned:hover { transform: scale(0.8); }
+    }
+    .pc-canvas-wrap::after, .pc-canvas-wrap.pc-pin-flash::after { animation: none !important; opacity: 0 !important; }
   }
 </style>
 
@@ -1045,6 +1118,12 @@
      tearing down the particle system. */
   let staticGlyph = null;
   function rebuildPixie() {
+    // Keeps the pin/unpin glow (see .pc-canvas-wrap CSS) in sync with
+    // whichever archetype is currently selected, so the "shine" always
+    // reads as *this* pixie's own color rather than a fixed brand hue.
+    const canvasWrapEl = document.querySelector('.pc-canvas-wrap');
+    if (canvasWrapEl) canvasWrapEl.style.setProperty('--pc-flash-color', archColors[currentArchetypeIdx]);
+
     if (prefersReducedMotion) {
       if (!staticGlyph) staticGlyph = staticFallback('live-pixie-canvas', archColors[currentArchetypeIdx]);
       else staticGlyph.style.setProperty('--pc-static-core', archColors[currentArchetypeIdx]);
@@ -1098,12 +1177,24 @@
       return canvasWrap.querySelector('#live-pixie-canvas, .pc-orb-static');
     }
 
+    function triggerGlowBloom() {
+      if (prefersReducedMotion) return;
+      canvasWrap.classList.remove('pc-pin-flash');
+      void canvasWrap.offsetWidth; // force reflow so rapid re-triggers restart cleanly
+      canvasWrap.classList.add('pc-pin-flash');
+      window.clearTimeout(triggerGlowBloom._t);
+      triggerGlowBloom._t = window.setTimeout(() => {
+        canvasWrap.classList.remove('pc-pin-flash');
+      }, 800);
+    }
+
     function setPinned(pinned) {
       const el = currentOrbEl();
       if (!el) return;
       const isPinned = el.classList.contains('pc-pinned');
       if (pinned === isPinned) return;
       el.classList.toggle('pc-pinned', pinned);
+      triggerGlowBloom();
       el.setAttribute('aria-label', pinned
         ? 'Live Pixie companion animation (pinned — click to return to top)'
         : 'Live Pixie companion animation');
