@@ -190,6 +190,7 @@
   .du-cockpit-wrap { flex-shrink:0; position:relative; z-index:1; width: 100%; max-width: 380px; }
   .du-cockpit {
     width: 100%;
+    position: relative;   /* anchors the ::before shine-ring below */
     background: var(--du-cockpit-bg);
     border: 1px solid var(--du-cockpit-border);
     border-radius: 12px;
@@ -200,19 +201,95 @@
                 right .5s var(--du-ease-cinematic), bottom .5s var(--du-ease-cinematic),
                 transform .5s var(--du-ease-cinematic);
   }
-  /* ── Pinned corner state ── */
+  /* ── Pinned corner state ──────────────────────────────────────────── */
+  /* Base scale (narrow/medium desktop). Widened at larger viewports
+     below so the pinned replica reads clearly on big screens instead
+     of staying a fixed, comparatively tiny 160px no matter how much
+     room is available. Anchored bottom-right throughout via
+     transform-origin, so it always grows "into" the same corner point
+     rather than drifting as the scale changes. */
   .du-cockpit.du-pinned {
     position: fixed;
     right: 20px;
     bottom: 20px;
-    width: 380px;                 /* stable box for transform:scale to shrink from */
+    width: 380px;                 /* stable box for transform:scale to shrink/grow from */
     transform-origin: bottom right;
     transform: scale(0.42);
     z-index: 80;
     box-shadow: 0 14px 38px var(--du-cockpit-shadow), 0 0 0 1px var(--du-cockpit-border);
     cursor: pointer;              /* click returns to top — see script */
+    /* Hover gets its own faster, non-cinematic transition — per
+       maie-tokens.css, --ease-cinematic is reserved for scene-level
+       moments (this pin/unpin), while everyday hover/interaction
+       motion should stay on --ease. */
+    transition: background .22s ease, border-color .22s ease, box-shadow .22s var(--ease),
+                right .5s var(--du-ease-cinematic), bottom .5s var(--du-ease-cinematic),
+                transform .22s var(--ease);
   }
-  .du-cockpit.du-pinned:hover { transform: scale(0.44); }
+  @media (min-width: 1000px) {
+    .du-cockpit.du-pinned { transform: scale(0.52); }
+  }
+  @media (min-width: 1400px) {
+    .du-cockpit.du-pinned { transform: scale(0.62); }
+  }
+
+  /* Hover: a deliberately amplified pop, well beyond the base pinned
+     scale, so hovering clearly invites a closer look rather than
+     nudging the box by a couple of percent. Still bottom-right
+     anchored, so it grows toward the user's cursor/corner rather than
+     shifting position. */
+  .du-cockpit.du-pinned:hover {
+    transform: scale(0.62);
+    box-shadow: 0 18px 46px var(--du-cockpit-shadow), 0 0 0 1px var(--du-brand);
+  }
+  @media (min-width: 1000px) {
+    .du-cockpit.du-pinned:hover { transform: scale(0.78); }
+  }
+  @media (min-width: 1400px) {
+    .du-cockpit.du-pinned:hover { transform: scale(0.94); }
+  }
+
+  /* ── Shine-sweep border ───────────────────────────────────────────── */
+  /* A brief, theme-colored conic-gradient ring that sweeps once around
+     .du-cockpit's border whenever it switches to or from the pinned
+     state — a "mode changed" flourish distinct from the scale/position
+     transition itself. Built as a ::before ring (padding + mask-
+     composite:exclude carves out the interior, leaving only a thin
+     gradient border visible) rather than a box-shadow, so the sweep
+     reads as light traveling around the edge rather than a glow pulse.
+     Dormant (opacity:0, no animation) until JS adds .du-pin-flash;
+     JS removes that class again once the animation completes. */
+  .du-cockpit::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 14px;
+    padding: 2px;
+    background: conic-gradient(from 0deg,
+      transparent 0deg,
+      var(--primary-light) 55deg,
+      var(--accent) 120deg,
+      transparent 200deg,
+      transparent 360deg);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .du-cockpit.du-pin-flash::before {
+    animation: du-shine-spin 900ms linear, du-shine-fade 900ms ease-out;
+  }
+  @keyframes du-shine-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  @keyframes du-shine-fade {
+    0%   { opacity: 0; }
+    12%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
   .du-cockpit-chrome {
     display:flex; align-items:center; gap:6px;
     padding:8px 12px; background: var(--du-cockpit-chrome-bg); border-bottom:1px solid var(--du-cockpit-chrome-border);
@@ -421,9 +498,15 @@
       transition: none !important;
     }
     /* Pinning still happens — it's functional, not decorative — but
-       the shrink/slide into the corner snaps instantly. */
-    .du-cockpit { transition: background .01ms, border-color .01ms, box-shadow .01ms !important; }
-    .du-cockpit.du-pinned:hover { transform: scale(0.42); }
+       the shrink/slide into the corner snaps instantly, the hover
+       amplification is dropped back to the resting scale (no motion
+       on hover), and the shine sweep never animates at all. */
+    .du-cockpit, .du-cockpit.du-pinned { transition: background .01ms, border-color .01ms, box-shadow .01ms !important; }
+    .du-cockpit.du-pinned:hover,
+    .du-cockpit.du-pinned { transform: scale(0.42); }
+    @media (min-width: 1000px) { .du-cockpit.du-pinned, .du-cockpit.du-pinned:hover { transform: scale(0.52); } }
+    @media (min-width: 1400px) { .du-cockpit.du-pinned, .du-cockpit.du-pinned:hover { transform: scale(0.62); } }
+    .du-cockpit::before, .du-cockpit.du-pin-flash::before { animation: none !important; opacity: 0 !important; }
   }
 
   /* Below 480px the module grid is already single-column and a 160px
@@ -1261,6 +1344,21 @@
 
     const mqPinnable = window.matchMedia('(min-width: 481px)');
 
+    function triggerShineFlash() {
+      if (prefersReducedMotion) return;
+      cockpit.classList.remove('du-pin-flash');
+      // Force reflow so the animation restarts cleanly if triggered
+      // again before the previous sweep finished (rapid scroll up/down
+      // near the pin threshold) — same technique the scene engine uses
+      // for its curtain flash.
+      void cockpit.offsetWidth;
+      cockpit.classList.add('du-pin-flash');
+      window.clearTimeout(triggerShineFlash._t);
+      triggerShineFlash._t = window.setTimeout(() => {
+        cockpit.classList.remove('du-pin-flash');
+      }, 900);
+    }
+
     function setPinned(pinned) {
       const isPinned = cockpit.classList.contains('du-pinned');
       if (pinned === isPinned) return;
@@ -1277,6 +1375,8 @@
         cockpit.classList.remove('du-pinned');
         wrap.style.height = '';
       }
+
+      triggerShineFlash();
 
       cockpit.setAttribute('aria-label', pinned
         ? 'Live miniature replica of the MAIE Dashboard (pinned — click to return to top)'
