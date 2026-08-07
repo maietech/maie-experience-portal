@@ -177,17 +177,41 @@
   .du-hero-sub { font-size:14px; color: var(--du-muted); line-height:1.6; margin:0; max-width:480px; }
 
   /* ── Live cockpit replica ──────────────────────────────────────────── */
+  /* .du-cockpit-wrap is now a reserved "slot": it holds .du-hero-top's
+     flex space at a fixed height (set live by JS via ResizeObserver,
+     since the sheet opening to 48px means the cockpit's natural height
+     isn't perfectly constant) so that when .du-cockpit itself flips to
+     position:fixed for the pinned-corner state, nothing around it
+     reflows — the slot never changes size, only what's positioned
+     inside it does. */
   .du-cockpit-wrap { flex-shrink:0; position:relative; z-index:1; width: 100%; max-width: 380px; }
   .du-cockpit {
-    width: 100%;
+    position: absolute;
+    inset: 0;
     background: var(--du-cockpit-bg);
     border: 1px solid var(--du-cockpit-border);
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 20px 50px var(--du-cockpit-shadow);
     font-family: var(--du-font-sans);
-    transition: background .22s ease, border-color .22s ease, box-shadow .22s ease;
+    transition: background .22s ease, border-color .22s ease, box-shadow .22s ease,
+                right .5s var(--du-ease-cinematic), bottom .5s var(--du-ease-cinematic),
+                transform .5s var(--du-ease-cinematic);
   }
+  /* ── Pinned corner state ── */
+  .du-cockpit.du-pinned {
+    position: fixed;
+    inset: auto;
+    right: 20px;
+    bottom: 20px;
+    width: 380px;                 /* stable box for transform:scale to shrink from */
+    transform-origin: bottom right;
+    transform: scale(0.42);
+    z-index: 80;
+    box-shadow: 0 14px 38px var(--du-cockpit-shadow), 0 0 0 1px var(--du-cockpit-border);
+    cursor: pointer;              /* click returns to top — see script */
+  }
+  .du-cockpit.du-pinned:hover { transform: scale(0.44); }
   .du-cockpit-chrome {
     display:flex; align-items:center; gap:6px;
     padding:8px 12px; background: var(--du-cockpit-chrome-bg); border-bottom:1px solid var(--du-cockpit-chrome-border);
@@ -394,6 +418,21 @@
   @media (prefers-reduced-motion: reduce) {
     .du-cockpit-tile, .du-cockpit-nucleus, .du-cockpit-orb-canvas, .du-cockpit-sheet, .du-cockpit-side-icon, .du-cockpit-rail-item {
       transition: none !important;
+    }
+    /* Pinning still happens — it's functional, not decorative — but
+       the shrink/slide into the corner snaps instantly. */
+    .du-cockpit { transition: background .01ms, border-color .01ms, box-shadow .01ms !important; }
+    .du-cockpit.du-pinned:hover { transform: scale(0.42); }
+  }
+
+  /* Below 480px the module grid is already single-column and a 160px
+     floating corner box would sit over a meaningful share of the
+     screen, so pinning is disabled entirely at that width (JS also
+     gates on this — see matchMedia('(min-width:481px)') below). */
+  @media (max-width: 480px) {
+    .du-cockpit.du-pinned {
+      position: absolute; inset: 0; transform: none; width: 100%;
+      right: auto; bottom: auto; cursor: default;
     }
   }
 </style>
@@ -725,6 +764,11 @@
       </div>
     </div>
   </div>
+
+  <!-- Sentinel purely for the cockpit-pin IntersectionObserver below —
+       zero-height, marks the scroll position at which the hero (and
+       its cockpit replica) has passed out of view. -->
+  <div id="du-cockpit-pin-sentinel" aria-hidden="true" style="height:0;"></div>
 
   <!-- ── MODULE GRID ──────────────────────────────────────────────────── -->
   <div class="du-section-label">Dashboard Modules — click to explore</div>
@@ -1191,6 +1235,75 @@
   activateModule('agent');
   activateStage('goal');
   activateViewTab('workspace');
+
+  // ── Sticky corner cockpit ────────────────────────────────────────────
+  // Pins the live .du-cockpit (the canvas lives inside it — untouched,
+  // never re-created) to the bottom-right corner once the hero has
+  // scrolled out of view, so the Recommended orb/tiles stay visible
+  // while the user clicks through .du-module-card buttons below.
+  //
+  // .du-cockpit-wrap is a fixed-size *slot* (see CSS); .du-cockpit sits
+  // at position:absolute; inset:0 inside it normally, and only flips to
+  // position:fixed for the pinned state — so nothing in .du-hero-top
+  // ever reflows, regardless of which state the cockpit is in.
+  (function setupStickyCockpit() {
+    const wrap = document.querySelector('.du-cockpit-wrap');
+    const cockpit = document.getElementById('du-cockpit');
+    const sentinel = document.getElementById('du-cockpit-pin-sentinel');
+    if (!wrap || !cockpit || !sentinel || typeof IntersectionObserver === 'undefined') return;
+
+    const mqPinnable = window.matchMedia('(min-width: 481px)');
+    let io = null;
+
+    function setPinned(pinned) {
+      const isPinned = cockpit.classList.contains('du-pinned');
+      if (pinned === isPinned) return;
+      cockpit.classList.toggle('du-pinned', pinned);
+      cockpit.setAttribute('aria-label', pinned
+        ? 'Live miniature replica of the MAIE Dashboard (pinned — click to return to top)'
+        : 'Live miniature replica of the MAIE Dashboard');
+    }
+
+    function handleIntersect(entries) {
+      if (!mqPinnable.matches) { setPinned(false); return; }
+      entries.forEach((entry) => {
+        // Sentinel sits right after the hero. Pin once it's scrolled
+        // above the viewport (hero, and the cockpit's normal-flow
+        // position, are no longer visible).
+        setPinned(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+      });
+    }
+
+    io = new IntersectionObserver(handleIntersect, { root: null, threshold: 0 });
+    io.observe(sentinel);
+
+    // Keep the slot's reserved height in sync with the cockpit's actual
+    // rendered height (the utility sheet opening to 48px changes it),
+    // so unpinning never causes a layout jump either.
+    if ('ResizeObserver' in window) {
+      const ro = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          if (!cockpit.classList.contains('du-pinned')) {
+            wrap.style.height = entry.contentRect.height + 'px';
+          }
+        }
+      });
+      ro.observe(cockpit);
+    }
+
+    const mqHandler = () => { if (!mqPinnable.matches) setPinned(false); };
+    if (mqPinnable.addEventListener) mqPinnable.addEventListener('change', mqHandler);
+    else if (mqPinnable.addListener) mqPinnable.addListener(mqHandler); // Safari <14
+
+    // Clicking the pinned corner widget scrolls back to the top — a
+    // standard picture-in-picture affordance, and the only way to
+    // un-pin it manually rather than waiting to scroll back up.
+    cockpit.addEventListener('click', () => {
+      if (cockpit.classList.contains('du-pinned')) {
+        window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+      }
+    });
+  })();
 
 })();
 </script>

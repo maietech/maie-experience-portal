@@ -383,7 +383,13 @@
                 radial-gradient(ellipse 40% 60% at 85% 20%, rgba(59,130,246,0.10) 0%, transparent 60%);
     pointer-events:none;
   }
-  .pc-canvas-wrap { flex-shrink:0; position:relative; z-index:1; }
+  /* .pc-canvas-wrap is a fixed 130x130 slot (matches the canvas's own
+     explicit CSS size below), so it reserves .pc-hero's flex space at
+     all times — including once #live-pixie-canvas itself flips to
+     position:fixed for the pinned-corner state. No measurement/
+     ResizeObserver needed here (unlike the dashboard's cockpit) since
+     the canvas's footprint is a fixed size, not content-dependent. */
+  .pc-canvas-wrap { flex-shrink:0; position:relative; z-index:1; width:130px; height:130px; }
   .pc-hero-text { flex:1; position:relative; z-index:1; }
   .pc-tag {
     display:inline-block;
@@ -500,26 +506,62 @@
   .pc-export-title { font-size:12px; font-weight:500; color: var(--pc-text); margin-bottom:.2rem; }
   .pc-export-desc { font-size:11px; color: var(--pc-muted); line-height:1.4; }
 
-  /* Canvas for live pixie */
+  /* Canvas for live pixie — position:absolute; inset:0 fills
+     .pc-canvas-wrap's fixed 130x130 slot exactly as the old static
+     width/height did, but lets it flip to position:fixed for the
+     pinned-corner state without .pc-canvas-wrap changing size. */
   #live-pixie-canvas {
     display: block;
     width: 130px;
     height: 130px;
+    position: absolute;
+    inset: 0;
+    transition: right .5s var(--pc-ease-cinematic, var(--ease-cinematic)),
+                bottom .5s var(--pc-ease-cinematic, var(--ease-cinematic)),
+                transform .5s var(--pc-ease-cinematic, var(--ease-cinematic));
   }
 
   /* Static fallback glyph — shown instead of the live canvas when
      prefers-reduced-motion is set. Same footprint as the canvas
      (130x130, matching pixie/index.html's .pm-orb-static pattern) so
-     layout never jumps. */
+     layout never jumps. Shares the same absolute/pinned positioning
+     rules as the canvas since either one can occupy the slot. */
   .pc-orb-static {
     width: 130px; height: 130px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     background: radial-gradient(circle at 40% 35%, var(--pc-static-core, #8B5CF6) 0%, transparent 72%);
     opacity: .8;
+    position: absolute;
+    inset: 0;
   }
   .pc-orb-static::after {
     content: ''; width: 30%; height: 30%; border-radius: 50%;
     background: var(--pc-static-core, #8B5CF6);
+  }
+
+  /* ── Pinned corner state (shared by canvas + static glyph) ── */
+  #live-pixie-canvas.pc-pinned,
+  .pc-orb-static.pc-pinned {
+    position: fixed;
+    inset: auto;
+    right: 20px;
+    bottom: 20px;
+    transform-origin: bottom right;
+    transform: scale(0.5);    /* 130px → 65px, matching the same shrink ratio used for the workflow orb */
+    z-index: 80;
+    border-radius: 50%;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+    cursor: pointer;
+    background: var(--pc-bg);
+  }
+  #live-pixie-canvas.pc-pinned:hover,
+  .pc-orb-static.pc-pinned:hover { transform: scale(0.54); }
+
+  @media (max-width: 480px) {
+    #live-pixie-canvas.pc-pinned,
+    .pc-orb-static.pc-pinned {
+      position: absolute; inset: 0; transform: none; right: auto; bottom: auto; cursor: default;
+    }
   }
 
   /* Sticky phase selector */
@@ -627,6 +669,10 @@
     .pc-phase-btn, .pc-theme-swatch, .pc-arch-card {
       transition-duration: .01ms !important;
     }
+    /* Pinning still happens, but snaps instantly instead of easing. */
+    #live-pixie-canvas, .pc-orb-static { transition-duration: .01ms !important; }
+    #live-pixie-canvas.pc-pinned:hover,
+    .pc-orb-static.pc-pinned:hover { transform: scale(0.5); }
   }
 </style>
 
@@ -657,6 +703,11 @@
       </div>
     </div>
   </div>
+
+  <!-- Sentinel purely for the pixie-pin IntersectionObserver below —
+       zero-height, marks the scroll position at which the hero (and
+       the live pixie's normal-flow position) has passed out of view. -->
+  <div id="pc-pin-sentinel" aria-hidden="true" style="height:0;"></div>
 
   <div class="pc-section-label">Three-tier identity architecture</div>
   <div class="pc-tiers">
@@ -1025,6 +1076,61 @@
   }
 
   rebuildPixie();
+
+  // ── Sticky corner pixie ────────────────────────────────────────────
+  // Pins whichever node currently occupies .pc-canvas-wrap — the live
+  // #live-pixie-canvas, or its .pc-orb-static reduced-motion fallback —
+  // to the bottom-right corner once the hero scrolls out of view, so
+  // it stays visible while the user works through the archetype grid
+  // and the .pc-phase runtime-demo buttons further down the page.
+  // Re-checks which node is current on every scroll frame's callback
+  // rather than caching one at setup time, since rebuildPixie() can
+  // swap canvas for static glyph (or vice versa) if reduced-motion
+  // preference changes mid-session.
+  (function setupStickyPixieCorner() {
+    const sentinel = document.getElementById('pc-pin-sentinel');
+    const canvasWrap = document.querySelector('.pc-canvas-wrap');
+    if (!sentinel || !canvasWrap || typeof IntersectionObserver === 'undefined') return;
+
+    const mqPinnable = window.matchMedia('(min-width: 481px)');
+
+    function currentOrbEl() {
+      return canvasWrap.querySelector('#live-pixie-canvas, .pc-orb-static');
+    }
+
+    function setPinned(pinned) {
+      const el = currentOrbEl();
+      if (!el) return;
+      const isPinned = el.classList.contains('pc-pinned');
+      if (pinned === isPinned) return;
+      el.classList.toggle('pc-pinned', pinned);
+      el.setAttribute('aria-label', pinned
+        ? 'Live Pixie companion animation (pinned — click to return to top)'
+        : 'Live Pixie companion animation');
+    }
+
+    function handleIntersect(entries) {
+      if (!mqPinnable.matches) { setPinned(false); return; }
+      entries.forEach((entry) => {
+        setPinned(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+      });
+    }
+
+    const io = new IntersectionObserver(handleIntersect, { root: null, threshold: 0 });
+    io.observe(sentinel);
+
+    const mqHandler = () => { if (!mqPinnable.matches) setPinned(false); };
+    if (mqPinnable.addEventListener) mqPinnable.addEventListener('change', mqHandler);
+    else if (mqPinnable.addListener) mqPinnable.addListener(mqHandler); // Safari <14
+
+    // Click the pinned corner to jump back to the top.
+    canvasWrap.addEventListener('click', () => {
+      const el = currentOrbEl();
+      if (el && el.classList.contains('pc-pinned')) {
+        window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+      }
+    });
+  })();
 })();
 </script>
 </body>
