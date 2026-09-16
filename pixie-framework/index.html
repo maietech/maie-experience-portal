@@ -10,7 +10,7 @@
         <link rel="manifest" href="/assets/site.webmanifest">
 <script src="../assets/theme-init.js"></script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>MAIE — Pixie Companion Identity Framework</title>
 <meta name="description" content="The Pixie Companion identity framework — a living avatar that mirrors identity, workflow state, and earned reputation across every MAIE archetype.">
 <link rel="canonical" href="https://maietech.github.io/maie-experience-portal/pixie-framework/">
@@ -588,10 +588,23 @@
     #live-pixie-canvas.pc-pinned:hover, .pc-orb-static.pc-pinned:hover { transform: scale(1.05); }
   }
 
+  /* Small viewports pin at a smaller scale rather than being disabled
+     outright — 65px (the desktop base scale) still worked, but sat
+     hard against the edge with no margin for iOS/Android gesture bars
+     and browser chrome, so this shrinks further and swaps the fixed
+     20px offsets for env(safe-area-inset-*)-aware ones. JS no longer
+     gates pinning on viewport width either — see setupStickyPixieCorner()
+     below. */
   @media (max-width: 480px) {
     #live-pixie-canvas.pc-pinned,
     .pc-orb-static.pc-pinned {
-      position: absolute; inset: 0; transform: none; right: auto; bottom: auto; cursor: default;
+      right: max(12px, env(safe-area-inset-right, 0px));
+      bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      transform: scale(0.4);   /* 130px → 52px */
+    }
+    #live-pixie-canvas.pc-pinned:hover,
+    .pc-orb-static.pc-pinned:hover {
+      transform: scale(0.46);
     }
   }
 
@@ -1173,8 +1186,6 @@
     const canvasWrap = document.querySelector('.pc-canvas-wrap');
     if (!sentinel || !canvasWrap || typeof IntersectionObserver === 'undefined') return;
 
-    const mqPinnable = window.matchMedia('(min-width: 481px)');
-
     function currentOrbEl() {
       return canvasWrap.querySelector('#live-pixie-canvas, .pc-orb-static');
     }
@@ -1203,7 +1214,6 @@
     }
 
     function handleIntersect(entries) {
-      if (!mqPinnable.matches) { setPinned(false); return; }
       entries.forEach((entry) => {
         setPinned(!entry.isIntersecting && entry.boundingClientRect.top < 0);
       });
@@ -1211,10 +1221,6 @@
 
     const io = new IntersectionObserver(handleIntersect, { root: null, threshold: 0 });
     io.observe(sentinel);
-
-    const mqHandler = () => { if (!mqPinnable.matches) setPinned(false); };
-    if (mqPinnable.addEventListener) mqPinnable.addEventListener('change', mqHandler);
-    else if (mqPinnable.addListener) mqPinnable.addListener(mqHandler); // Safari <14
 
     // Click the pinned corner to jump back to the top.
     canvasWrap.addEventListener('click', () => {

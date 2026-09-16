@@ -10,7 +10,7 @@
         <link rel="manifest" href="/assets/site.webmanifest">
 <script src="../assets/theme-init.js"></script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>MAIE — Dashboard</title>
 <meta name="description" content="The MAIE cockpit — agent workflow, projects, compute, token balance, and marketplace assets in one live data-readout view.">
 <link rel="canonical" href="https://maietech.github.io/maie-experience-portal/dashboard/">
@@ -511,14 +511,21 @@
     .du-cockpit::before, .du-cockpit.du-pin-flash::before { animation: none !important; opacity: 0 !important; }
   }
 
-  /* Below 480px the module grid is already single-column and a 160px
-     floating corner box would sit over a meaningful share of the
-     screen, so pinning is disabled entirely at that width (JS also
-     gates on this — see matchMedia('(min-width:481px)') below). */
+  /* Below 480px the module grid is already single-column, so a 160px
+     floating corner box (the desktop base scale) would still cover a
+     meaningful share of the screen — this shrinks it further instead
+     of disabling it outright, and swaps the fixed 20px offsets for
+     env(safe-area-inset-*)-aware ones so it clears iOS/Android gesture
+     bars and browser chrome. JS no longer gates pinning on viewport
+     width either — see setupStickyCockpit() below. */
   @media (max-width: 480px) {
     .du-cockpit.du-pinned {
-      position: absolute; inset: 0; transform: none; width: 100%;
-      right: auto; bottom: auto; cursor: default;
+      right: max(12px, env(safe-area-inset-right, 0px));
+      bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      transform: scale(0.26);   /* 380px → ~99px */
+    }
+    .du-cockpit.du-pinned:hover {
+      transform: scale(0.3);
     }
   }
 </style>
@@ -1344,8 +1351,6 @@
     const sentinel = document.getElementById('du-cockpit-pin-sentinel');
     if (!wrap || !cockpit || !sentinel || typeof IntersectionObserver === 'undefined') return;
 
-    const mqPinnable = window.matchMedia('(min-width: 481px)');
-
     function triggerShineFlash() {
       if (prefersReducedMotion) return;
       cockpit.classList.remove('du-pin-flash');
@@ -1386,7 +1391,6 @@
     }
 
     function handleIntersect(entries) {
-      if (!mqPinnable.matches) { setPinned(false); return; }
       entries.forEach((entry) => {
         // Sentinel sits right after the hero. Pin once it's scrolled
         // above the viewport (hero, and the cockpit's normal-flow
@@ -1397,10 +1401,6 @@
 
     const io = new IntersectionObserver(handleIntersect, { root: null, threshold: 0 });
     io.observe(sentinel);
-
-    const mqHandler = () => { if (!mqPinnable.matches) setPinned(false); };
-    if (mqPinnable.addEventListener) mqPinnable.addEventListener('change', mqHandler);
-    else if (mqPinnable.addListener) mqPinnable.addListener(mqHandler); // Safari <14
 
     // Clicking the pinned corner widget scrolls back to the top — a
     // standard picture-in-picture affordance, and the only way to
