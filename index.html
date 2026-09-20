@@ -87,6 +87,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 16px;
     padding: 28px 48px;
     border-bottom: 1px solid var(--border);
   }
@@ -95,8 +96,14 @@
     font-family: 'Bebas Neue', sans-serif;
     font-size: 22px;
     letter-spacing: 0.08em;
+    /* Lowest-priority item in the row: if space ever runs out it
+       truncates instead of pushing the nav/CTA off-screen. */
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .wordmark span { color: var(--brand-light); }
+  .wordmark-sep { color: var(--brand-light); }
 
   .eyebrow-tag {
     font-family: 'JetBrains Mono', monospace;
@@ -104,9 +111,13 @@
     letter-spacing: 0.12em;
     color: var(--muted);
     text-transform: uppercase;
+    white-space: nowrap;
   }
 
-  .header-right { display: flex; align-items: center; gap: 16px; }
+  /* The nav cluster never shrinks — everything that has to give way
+     (see "Header: responsive collapse" below) is removed or truncated
+     on the left side of the row, not squeezed out of this group. */
+  .header-right { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
 
   /* Primary CTA — signup is the primary path per the portal-wide UX
      direction; previously this header had zero CTA at all, and the
@@ -127,6 +138,7 @@
     box-shadow: 0 2px 10px var(--primary-glow);
     transition: background 0.2s ease, box-shadow 0.2s ease;
     flex-shrink: 0;
+    white-space: nowrap;
   }
   .header-cta:hover,
   .header-cta:focus-visible {
@@ -225,9 +237,6 @@
   .mnav-more-link:focus-visible { background: var(--mnav-hover-bg); color: var(--brand-light); }
 
   @media (max-width: 480px) {
-    .mnav-more-label { display: none; }
-    .mnav-more-toggle { padding: 8px; width: 44px; justify-content: center; }
-    .mnav-more-panel { right: 12px; left: 12px; max-width: none; }
     .header-cta { padding: 9px 14px; }
   }
 
@@ -476,6 +485,86 @@
     .cta-card .card-actions { flex-direction: column; }
   }
 
+  /* ── Header: responsive collapse ────────────────────────────────
+     The header is one non-wrapping row, so it sheds items in a fixed
+     priority order as the viewport narrows (lowest priority first):
+       1. portal.joinmaie.com tag ............ decorative         <= 900px
+       2. "Menu" button + dropdown ............ moved to sub-bar   <= 720px
+       3. theme toggle's Dark/Light label .... redundant w/ icon   <= 560px
+       4. "| PRODUCT EXPERIENCE" .............. descriptive        <= 480px
+       5. wordmark ellipsis .................. last-resort shock absorber
+     Start Free and the theme toggle are never in that list. Like the
+     .cta-card block above, this sits after the 720px block on purpose:
+     it overrides that block's `header { padding }`. */
+  @media (max-width: 900px) {
+    .eyebrow-tag { display: none; }
+  }
+  @media (max-width: 720px) {
+    header { gap: 12px; }
+    .header-right { gap: 10px; }
+    .header-cta { min-height: 44px; }   /* matches the 44px theme toggle */
+  }
+  @media (max-width: 560px) {
+    header .mnav-theme-toggle .mnav-theme-label { display: none; }
+    header .mnav-theme-toggle { gap: 0; min-width: 44px; justify-content: center; }
+  }
+  @media (max-width: 480px) {
+    header { padding: 16px; }
+    .header-right { gap: 8px; }
+    .wordmark-sub { display: none; }
+  }
+
+  /* ── Mobile sub-bar ─────────────────────────────────────────────
+     Replaces the "Menu" dropdown at <= 720px: the same five links,
+     always visible under the header instead of behind a tap, so nothing
+     has to be scrolled to or discovered. Inverse-scheme bar: brand fill
+     (--brand = --primary: #A52A2A reddish in dark, #772E25 umbra in
+     light) with white text — 7.1:1 / 9.6:1 against those fills, so it
+     clears AA in both themes. Text stays light in BOTH themes on
+     purpose: dark text on the umbra fill would be ~2:1. Links wrap to a
+     second row on phones rather than scrolling sideways. Hidden entirely
+     (display:none, so also out of the a11y tree) above 720px, where the
+     dropdown takes over. Keep its links in sync with #mnav-more-panel. */
+  .subbar { display: none; }
+  @media (max-width: 720px) {
+    .mnav-more-toggle,
+    .mnav-more-panel { display: none; }
+
+    .subbar {
+      position: relative;   /* + z-index: sit above the fixed .glow blobs, like <header> */
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 0 4px;
+      padding: 4px 12px;
+      background: var(--brand);
+    }
+    .subbar a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 0 12px;
+      border-radius: 8px;
+      color: #fff;
+      font: 600 13px/1 'DM Sans', sans-serif;
+      letter-spacing: 0.01em;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.15s ease;
+    }
+    .subbar a:hover,
+    .subbar a:focus-visible { background: rgba(255, 255, 255, 0.16); }
+    .subbar a:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+  }
+  /* <= 350px (320px-class phones): tighten so the five links still fit
+     in two rows instead of three. */
+  @media (max-width: 350px) {
+    .subbar { gap: 0 2px; padding-inline: 8px; }
+    .subbar a { padding: 0 8px; font-size: 12.5px; }
+  }
+
   footer {
     position: relative;
     z-index: 1;
@@ -492,7 +581,7 @@
     .card, .btn-pill, .btn-icon { transition: none; }
     .btn-pill:hover .btn-icon,
     .btn-pill:focus-visible .btn-icon { transform: none; }
-    .mnav-more-panel { transition: none; }
+    .mnav-more-panel, .subbar a { transition: none; }
   }
 </style>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "76f318e193dd4ccfa03b354c28c3b6b3"}'></script><!-- End Cloudflare Web Analytics -->
@@ -521,9 +610,15 @@
      (.mnav-more-toggle/.mnav-more-panel, same component and classes as
      nav-component.html's), since this header had zero visibility into
      the module template or the external MAIE ecosystem sites outside
-     that same buried card. -->
+     that same buried card.
+
+     UPDATE (2026-09-20, mobile): the one-row header overflowed at every
+     width <= 720px (Start Free was pushed off-screen). It now sheds items
+     in priority order (see "Header: responsive collapse" in the CSS), and
+     at <= 720px the Menu dropdown is replaced by an always-visible
+     brand-colored sub-bar (.subbar) carrying the same links. -->
 <header>
-  <div class="wordmark">MAIE <span>|</span> PRODUCT EXPERIENCE</div>
+  <div class="wordmark">MAIE <span class="wordmark-sub"><span class="wordmark-sep">|</span> PRODUCT EXPERIENCE</span></div>
   <div class="header-right">
     <div class="eyebrow-tag">portal.joinmaie.com</div>
     <button
@@ -546,6 +641,17 @@
     <a class="header-cta" href="https://app.joinmaie.com/signup" target="_blank" rel="noopener">Start Free</a>
   </div>
 </header>
+
+<!-- Mobile sub-bar (<= 720px only; display:none above that). Same links as
+     the Menu panel below, which it replaces on small screens — keep the
+     two lists in sync. -->
+<nav class="subbar" aria-label="More from MAIE">
+  <a href="experience-module/">Module Template</a>
+  <a href="https://joinmaie.com" target="_blank" rel="noopener">joinmaie.com</a>
+  <a href="https://app.joinmaie.com" target="_blank" rel="noopener">The App</a>
+  <a href="https://waitlist.joinmaie.com" target="_blank" rel="noopener">Waitlist</a>
+  <a href="https://mma.joinmaie.com" target="_blank" rel="noopener">Midwest Media Alliance</a>
+</nav>
 
 <!-- "Menu" panel — root-relative hrefs (this page IS the site root). -->
 <div class="mnav-more-panel" id="mnav-more-panel" role="menu" aria-hidden="true">
