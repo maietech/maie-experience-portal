@@ -311,28 +311,36 @@
     /* 260px = size(104) * 2.5 — same lockstep pairing as desktop, was 200px/size 80. */
     .pixie-companion-wrap { width: 260px; height: 260px; }
 
-    /* Desktop's cta-card is deliberately centered (it's the odd row-out,
-       pointing outward rather than into another module) — but at this
-       width that reads as floaty next to everything else on the page
-       going left-aligned, so it switches to match. */
-    .cta-card { text-align: left; align-items: flex-start; }
-    .cta-card .card-kicker { justify-content: flex-start; }
   }
 
+  /* ── Link modules ──────────────────────────────────────────────
+     Cards are containers, not links: the action is an explicit pill
+     button. The four module cards keep a card-sized hit area via a
+     "stretched link" (.card-link::after) so the whole tile is still
+     clickable, but the tab stop / focus ring / accessible name all
+     live on the visible pill. */
   .card {
     background: var(--bg);
     padding: 40px;
-    text-decoration: none;
     color: inherit;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    justify-content: space-between; /* pins the actions row to the card bottom */
+    gap: 28px;
     transition: background 0.25s ease;
-    position: relative;
+    position: relative;             /* containing block for the stretched link */
   }
 
-  .card:hover { background: var(--surface); }
-  .card:focus-visible { outline: 2px solid var(--brand-light); outline-offset: -2px; }
+  /* Only the clickable module cards react to hover — the CTA card is a
+     plain container, so a hover tint there would falsely imply the whole
+     card is a link. */
+  .card:not(.cta-card):hover { background: var(--surface); }
+
+  .card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
 
   .card-kicker {
     display: inline-flex;
@@ -364,28 +372,90 @@
     max-width: 38ch;
   }
 
-  .card-arrow {
-    margin-top: auto;
-    padding-top: 18px;
-    /* Bottom padding added — the cta-card's arrow is a standalone <a>
-       (the other four are decorative text inside the whole-card link),
-       and touch-target audit via Playwright measured it at 144x35,
-       under 44px, at 390px width. */
-    padding-bottom: 15px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    color: var(--text);
+  .card-actions {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: gap 0.2s ease;
+    flex-wrap: wrap;
+    gap: 12px;
   }
-  .card:hover .card-arrow { gap: 10px; }
 
-  /* 5th, full-width row: points outward to the main site / waitlist,
-     rather than into another module like the four cards above it. */
+  /* Pill button. Every color comes from a theme token (or color-mix of
+     one), so it flips with the toggle without a [data-theme] override.
+     Resting outline is text-color-derived rather than --border: --border
+     is the hairline that separates grid cells and is deliberately quiet,
+     which would make the pill's edge hard to see. Hover/focus pick up the
+     card's own --kicker-color, tying the button to the card's accent. */
+  .btn-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;               /* touch target — replaces the old .card-arrow padding hack */
+    padding: 0 24px;
+    border-radius: 9999px;
+    font: 600 14px/1 'DM Sans', sans-serif;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--border);                                  /* fallback */
+    border-color: color-mix(in srgb, var(--text) 40%, transparent);
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+  }
+
+  .btn-pill:hover,
+  .btn-pill:focus-visible {
+    border-color: var(--kicker-color, var(--text));
+    background: color-mix(in srgb, var(--kicker-color, var(--text)) 14%, transparent);
+  }
+
+  .btn-pill:focus-visible {
+    outline: 2px solid var(--brand-light);
+    outline-offset: 3px;
+  }
+
+  .btn-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+  /* Arrow nudges with transform, not by animating `gap` — a gap change
+     re-lays-out the pill (its width jumps, which visibly shifts the
+     centered CTA row); transform is paint-only. */
+  .btn-pill:hover .btn-icon,
+  .btn-pill:focus-visible .btn-icon { transform: translateX(3px); }
+
+  /* Primary (conversion) variant — same treatment as .header-cta */
+  .btn-pill.btn-primary {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+    box-shadow: 0 2px 10px var(--primary-glow);
+  }
+  .btn-pill.btn-primary:hover,
+  .btn-pill.btn-primary:focus-visible {
+    background: var(--brand-light);
+    border-color: var(--brand-light);
+    box-shadow: 0 4px 16px var(--primary-glow);
+  }
+
+  /* Stretched link: the pill's ::after covers the whole card (.card is
+     the nearest positioned ancestor). Hovering the overlay counts as
+     hovering the <a>, so the pill's hover state fires card-wide. */
+  .card-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  /* 5th, full-width row: points outward to the app / waitlist / main site
+     rather than into another module. Not a stretched link — it holds
+     several independent targets. */
   .cta-card { grid-column: 1 / -1; align-items: center; text-align: center; }
-  .cta-card .card-kicker { justify-content: center; }
+  /* .card-content is a flex item now; without this the 64ch paragraph
+     would hug its left edge instead of centering under the title. */
+  .cta-card .card-content { align-items: center; }
   .cta-card .card-desc { max-width: 64ch; }
   .cta-card .card-desc a {
     color: var(--brand-light);
@@ -393,7 +463,18 @@
     text-underline-offset: 2px;
   }
   .cta-card .card-desc a:hover { color: var(--text); }
-  .cta-card a:focus-visible { outline: 2px solid var(--brand-light); outline-offset: 2px; }
+  .cta-card .card-desc a:focus-visible { outline: 2px solid var(--brand-light); outline-offset: 2px; }
+  .cta-card .card-actions { justify-content: center; }
+
+  /* Mobile overrides for the CTA card. These MUST come after the base
+     .cta-card rules above: at equal specificity the later rule wins, and
+     the previous version of this block sat earlier in the file, so it was
+     never applied. */
+  @media (max-width: 720px) {
+    .cta-card { text-align: left; align-items: stretch; }
+    .cta-card .card-content { align-items: flex-start; }
+    .cta-card .card-actions { flex-direction: column; }
+  }
 
   footer {
     position: relative;
@@ -408,7 +489,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .card, .card-arrow { transition: none; }
+    .card, .btn-pill, .btn-icon { transition: none; }
+    .btn-pill:hover .btn-icon,
+    .btn-pill:focus-visible .btn-icon { transform: none; }
     .mnav-more-panel { transition: none; }
   }
 </style>
@@ -495,44 +578,82 @@
   </div>
 
   <div class="grid">
-    <a class="card" href="pitch/" style="--kicker-color: var(--brand-light);">
-      <div class="card-kicker">Pitch Deck · 12 Chapters</div>
-      <div class="card-title">The Full Walkthrough</div>
-      <p class="card-desc">Vision, industry challenges, architecture, roadmap, and business model — the complete narrative.</p>
-      <div class="card-arrow">Enter the pitch →</div>
-    </a>
+    <div class="card" style="--kicker-color: var(--brand-light);">
+      <div class="card-content">
+        <div class="card-kicker">Pitch Deck · 12 Chapters</div>
+        <div class="card-title">The Full Walkthrough</div>
+        <p class="card-desc">Vision, industry challenges, architecture, roadmap, and business model — the complete narrative.</p>
+      </div>
+      <div class="card-actions">
+        <a class="btn-pill card-link" href="pitch/">
+          Enter the pitch
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
 
-    <a class="card" href="dashboard/" style="--kicker-color: var(--blue);">
-      <div class="card-kicker">Product Overview</div>
-      <div class="card-title">The Workspace</div>
-      <p class="card-desc">What a creator actually sees — the dashboard, the tools, the day-to-day of the platform.</p>
-      <div class="card-arrow">See the dashboard →</div>
-    </a>
+    <div class="card" style="--kicker-color: var(--blue);">
+      <div class="card-content">
+        <div class="card-kicker">Product Overview</div>
+        <div class="card-title">The Workspace</div>
+        <p class="card-desc">What a creator actually sees — the dashboard, the tools, the day-to-day of the platform.</p>
+      </div>
+      <div class="card-actions">
+        <a class="btn-pill card-link" href="dashboard/">
+          See the dashboard
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
 
-    <a class="card" href="pixie/" style="--kicker-color: var(--amber);">
-      <div class="card-kicker">Product Experience</div>
-      <div class="card-title">Meet Pixie</div>
-      <p class="card-desc">The companion, on its own terms — how it looks, moves, and responds inside a workspace.</p>
-      <div class="card-arrow">Meet Pixie →</div>
-    </a>
+    <div class="card" style="--kicker-color: var(--amber);">
+      <div class="card-content">
+        <div class="card-kicker">Product Experience</div>
+        <div class="card-title">Meet Pixie</div>
+        <p class="card-desc">The companion, on its own terms — how it looks, moves, and responds inside a workspace.</p>
+      </div>
+      <div class="card-actions">
+        <a class="btn-pill card-link" href="pixie/">
+          Meet Pixie
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
 
-    <a class="card" href="pixie-framework/" style="--kicker-color: var(--green);">
-      <div class="card-kicker">System Overview</div>
-      <div class="card-title">How Pixie Works</div>
-      <p class="card-desc">The framework underneath the companion — archetypes, reputation echo, and how it learns.</p>
-      <div class="card-arrow">See the framework →</div>
-    </a>
+    <div class="card" style="--kicker-color: var(--green);">
+      <div class="card-content">
+        <div class="card-kicker">System Overview</div>
+        <div class="card-title">How Pixie Works</div>
+        <p class="card-desc">The framework underneath the companion — archetypes, reputation echo, and how it learns.</p>
+      </div>
+      <div class="card-actions">
+        <a class="btn-pill card-link" href="pixie-framework/">
+          See the framework
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
 
     <div class="card cta-card" style="--kicker-color: var(--brand-light);">
-      <div class="card-kicker">Beyond This Hub</div>
-      <div class="card-title">Ready to try it yourself?</div>
-      <p class="card-desc">
-        This hub is the guided tour through the product itself. MAIE is live today —
-        <a href="https://joinmaie.com" target="_blank" rel="noopener">visit joinmaie.com</a> for the full story
-        and pricing, or <a href="https://waitlist.joinmaie.com">join the waitlist</a> instead if you're not
-        ready to dive in yet. You can always find your way back to the <a href="./">portal home</a> from here.
-      </p>
-      <a class="card-arrow" href="https://app.joinmaie.com/signup" target="_blank" rel="noopener">Sign up now →</a>
+      <div class="card-content">
+        <div class="card-kicker">Beyond This Hub</div>
+        <div class="card-title">Ready to try it yourself?</div>
+        <p class="card-desc">
+          This hub is the guided tour through the product itself. MAIE is live today —
+          <a href="https://joinmaie.com" target="_blank" rel="noopener">visit joinmaie.com</a>
+          for the full story and pricing.
+        </p>
+      </div>
+      <div class="card-actions">
+        <a class="btn-pill btn-primary" href="https://app.joinmaie.com/signup" target="_blank" rel="noopener">
+          Sign up now
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a class="btn-pill" href="https://waitlist.joinmaie.com" target="_blank" rel="noopener">
+          Not ready? Join the waitlist
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
     </div>
   </div>
 </main>
