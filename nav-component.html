@@ -25,6 +25,19 @@
   Set data-nav="dashboard|experience|companion|pitch|framework" on
   <body> in the host page; the script below reads it to mark the
   matching link. If omitted, no link is marked active.
+
+  UPDATE (2026-09-20): added the "Menu" secondary nav (.mnav-more-toggle
+  / .mnav-more-panel) — always visible at every width, revealing pages
+  outside the primary 4-link bar (currently just the module template)
+  plus the external MAIE ecosystem sites (joinmaie.com, app.joinmaie.com,
+  waitlist.joinmaie.com, mma.joinmaie.com). Deliberately does NOT add
+  experience-module/ to the primary .mnav-links bar — that page's own
+  <title>/meta explicitly self-describe it as a reusable template, not a
+  finished module page like its three siblings, so it stays out of the
+  always-visible peer row and lives only in this secondary menu. The
+  hrefs in the panel below are root-style (correct as pasted here and
+  into index.html); adjust to "../"-prefixed when pasting into a page
+  one directory deep, same as the primary .mnav-links already require.
 -->
 <style>
   :root {
@@ -133,10 +146,114 @@
   .mnav-overlay.open { display: flex; flex-direction: column; gap: 4px; }
   .mnav-overlay .mnav-link { font-size: 16px; padding: 14px 12px; }
 
+  /* ── "Menu" — secondary nav: reveals pages not already in the primary
+       4-link bar (the module template) plus the external MAIE ecosystem
+       sites. Always visible at every width, unlike .mnav-toggle above
+       (which only ever mirrors the primary 4 links, and only <720px). */
+  .mnav-more-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid var(--mnav-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    height: 44px;
+    color: var(--mnav-text);
+    font-family: var(--mnav-font);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background .15s, border-color .15s;
+  }
+  .mnav-more-toggle:hover,
+  .mnav-more-toggle[aria-expanded="true"] {
+    background: var(--mnav-hover-bg);
+    border-color: var(--mnav-active-ring);
+  }
+  .mnav-more-toggle svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+  .mnav-more-panel {
+    /* fixed, not absolute: .mnav is sticky, and this panel is a sibling
+       of <nav> (not a descendant), so absolute positioning would anchor
+       to the document root and drift out from under the button as soon
+       as the page scrolls past the nav's sticking point. Fixed keeps it
+       viewport-anchored, matching .mnav-overlay's own fixed positioning
+       just below. */
+    position: fixed;
+    top: calc(var(--mnav-height) + 8px);
+    right: clamp(16px, 3vw, 40px);
+    z-index: 1001;
+    min-width: 220px;
+    max-width: min(320px, calc(100vw - 32px));
+    background: var(--mnav-overlay-bg);
+    border: 1px solid var(--mnav-border);
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transform-origin: top right;
+    opacity: 0;
+    transform: scale(0.92) translateY(-6px);
+    pointer-events: none;
+    /* --ease-cinematic is reserved (per maie-tokens.css) for scene-level
+       moments, not routine nav — a full secondary-menu reveal is the one
+       nav interaction closer to that category than a hover state, so it's
+       used here deliberately rather than the standard --ease. */
+    transition: opacity 0.32s var(--ease-cinematic), transform 0.32s var(--ease-cinematic);
+  }
+  .mnav-more-panel.open {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+  }
+  .mnav-more-group + .mnav-more-group {
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--mnav-border);
+  }
+  .mnav-more-group-label {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--mnav-muted);
+    padding: 6px 10px 4px;
+  }
+  .mnav-more-link {
+    display: block;
+    padding: 9px 10px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--mnav-text);
+    text-decoration: none;
+    transition: background .15s, color .15s;
+  }
+  .mnav-more-link:hover,
+  .mnav-more-link:focus-visible { background: var(--mnav-hover-bg); color: var(--mnav-brand-light); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mnav-more-panel { transition: none; }
+  }
+
   @media (max-width: 720px) {
     .mnav-links { display: none; }
     .mnav-toggle { display: flex; }
     .mnav-context { display: none; }
+  }
+
+  /* Very narrow viewports: theme toggle + "Menu" text + mobile hamburger
+     all sharing .mnav-right at once no longer fit past ~480px — drop the
+     "Menu" text label (icon + aria-label remain) and let the panel span
+     full-width instead of anchoring to a fixed right offset. */
+  @media (max-width: 480px) {
+    .mnav-more-label { display: none; }
+    .mnav-more-toggle { padding: 8px; width: 44px; justify-content: center; }
+    .mnav-more-panel { right: 12px; left: 12px; max-width: none; }
   }
 </style>
 
@@ -181,6 +298,17 @@
       </span>
       <span class="mnav-theme-label" id="mnav-theme-label"></span>
     </button>
+    <button
+      class="mnav-more-toggle"
+      id="mnav-more-toggle"
+      type="button"
+      aria-haspopup="true"
+      aria-expanded="false"
+      aria-controls="mnav-more-panel"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <span class="mnav-more-label">Menu</span>
+    </button>
     <button class="mnav-toggle" id="mnav-toggle" aria-label="Open menu" aria-expanded="false">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
     </button>
@@ -188,6 +316,26 @@
 </nav>
 
 <div class="mnav-overlay" id="mnav-overlay"></div>
+
+<!-- "Menu" panel — pages beyond the primary 4-link bar, plus the wider
+     MAIE ecosystem. Relative hrefs below are root-style (correct when
+     this template is pasted at the site root, e.g. index.html); pages
+     one directory deep (dashboard/, pitch/, pixie/, pixie-framework/)
+     need each "../"-prefixed, same adjustment already made for the
+     primary .mnav-links above when pasting into those pages. -->
+<div class="mnav-more-panel" id="mnav-more-panel" role="menu" aria-hidden="true">
+  <div class="mnav-more-group">
+    <div class="mnav-more-group-label">More From the Portal</div>
+    <a class="mnav-more-link" role="menuitem" href="experience-module/">Module Template</a>
+  </div>
+  <div class="mnav-more-group">
+    <div class="mnav-more-group-label">MAIE Ecosystem</div>
+    <a class="mnav-more-link" role="menuitem" href="https://joinmaie.com" target="_blank" rel="noopener">joinmaie.com</a>
+    <a class="mnav-more-link" role="menuitem" href="https://app.joinmaie.com" target="_blank" rel="noopener">The App</a>
+    <a class="mnav-more-link" role="menuitem" href="https://waitlist.joinmaie.com" target="_blank" rel="noopener">Waitlist</a>
+    <a class="mnav-more-link" role="menuitem" href="https://mma.joinmaie.com" target="_blank" rel="noopener">Midwest Media Alliance</a>
+  </div>
+</div>
 
 <script>
 (function () {
@@ -260,6 +408,40 @@
         overlay.classList.remove('open');
         toggle.setAttribute('aria-expanded', 'false');
         toggle.focus();
+      }
+    });
+  }
+
+  // ── "Menu" — secondary nav (module template + MAIE ecosystem links) ──
+  // Same click-toggle / click-away / Escape pattern as the primary
+  // overlay above, for the same keyboard-dismissal reason.
+  var moreToggle = document.getElementById('mnav-more-toggle');
+  var morePanel  = document.getElementById('mnav-more-panel');
+  if (moreToggle && morePanel) {
+    var closeMore = function () {
+      morePanel.classList.remove('open');
+      morePanel.setAttribute('aria-hidden', 'true');
+      moreToggle.setAttribute('aria-expanded', 'false');
+    };
+    var openMore = function () {
+      morePanel.classList.add('open');
+      morePanel.setAttribute('aria-hidden', 'false');
+      moreToggle.setAttribute('aria-expanded', 'true');
+    };
+    moreToggle.addEventListener('click', function () {
+      if (morePanel.classList.contains('open')) closeMore(); else openMore();
+    });
+    document.addEventListener('click', function (e) {
+      if (
+        morePanel.classList.contains('open') &&
+        !morePanel.contains(e.target) &&
+        !moreToggle.contains(e.target)
+      ) closeMore();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && morePanel.classList.contains('open')) {
+        closeMore();
+        moreToggle.focus();
       }
     });
   }

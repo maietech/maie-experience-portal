@@ -108,6 +108,129 @@
 
   .header-right { display: flex; align-items: center; gap: 16px; }
 
+  /* Primary CTA — signup is the primary path per the portal-wide UX
+     direction; previously this header had zero CTA at all, and the
+     only signup link on the whole page was buried in the 5th of 5
+     equal-weight grid cards ("Beyond This Hub"). */
+  .header-cta {
+    display: inline-flex;
+    align-items: center;
+    padding: 9px 18px;
+    border-radius: 8px;
+    background: var(--brand);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    box-shadow: 0 2px 10px var(--primary-glow);
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+    flex-shrink: 0;
+  }
+  .header-cta:hover,
+  .header-cta:focus-visible {
+    background: var(--brand-light);
+    box-shadow: 0 4px 16px var(--primary-glow);
+  }
+
+  /* ── "Menu" — secondary nav, same component/behavior as the module
+     pages' nav-component.html (class names match on purpose so
+     maie-tokens.css's --mnav-* tokens style both identically), reveals
+     the module template plus the external MAIE ecosystem sites. This
+     hub deliberately has no primary .mnav-links bar of its own (see the
+     2026-07-23 decision comment above <header> — links back to the same
+     4 cards immediately below would be redundant), but had zero
+     ecosystem-link visibility outside the buried 5th grid card, which
+     this closes. */
+  .mnav-more-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    height: 44px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background .15s, border-color .15s;
+  }
+  .mnav-more-toggle:hover,
+  .mnav-more-toggle[aria-expanded="true"] {
+    background: var(--mnav-hover-bg);
+    border-color: var(--mnav-active-ring);
+  }
+  .mnav-more-toggle svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+  .mnav-more-panel {
+    /* fixed + JS-measured top (see script below): unlike the module
+       pages' nav, this header isn't a fixed --mnav-height tall (it's
+       padding-driven, 28px 48px, plus a 44px-tall theme toggle), so a
+       hardcoded calc() would drift; the 100px here is only a same-
+       paint fallback for the no-JS case. */
+    position: fixed;
+    top: 100px;
+    right: clamp(16px, 3vw, 40px);
+    z-index: 1001;
+    min-width: 220px;
+    max-width: min(320px, calc(100vw - 32px));
+    background: var(--mnav-overlay-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transform-origin: top right;
+    opacity: 0;
+    transform: scale(0.92) translateY(-6px);
+    pointer-events: none;
+    transition: opacity 0.32s var(--ease-cinematic), transform 0.32s var(--ease-cinematic);
+  }
+  .mnav-more-panel.open {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+  }
+  .mnav-more-group + .mnav-more-group {
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .mnav-more-group-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 6px 10px 4px;
+  }
+  .mnav-more-link {
+    display: block;
+    padding: 9px 10px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text);
+    text-decoration: none;
+    transition: background .15s, color .15s;
+  }
+  .mnav-more-link:hover,
+  .mnav-more-link:focus-visible { background: var(--mnav-hover-bg); color: var(--brand-light); }
+
+  @media (max-width: 480px) {
+    .mnav-more-label { display: none; }
+    .mnav-more-toggle { padding: 8px; width: 44px; justify-content: center; }
+    .mnav-more-panel { right: 12px; left: 12px; max-width: none; }
+    .header-cta { padding: 9px 14px; }
+  }
+
   main {
     position: relative;
     z-index: 1;
@@ -286,6 +409,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .card, .card-arrow { transition: none; }
+    .mnav-more-panel { transition: none; }
   }
 </style>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "76f318e193dd4ccfa03b354c28c3b6b3"}'></script><!-- End Cloudflare Web Analytics -->
@@ -304,19 +428,56 @@
      module. Closed by reusing the shared .mnav-theme-* classes/tokens
      from assets/maie-tokens.css (same markup + logic as
      nav-component.html's toggle) rather than inventing a second
-     implementation. -->
+     implementation.
+
+     UPDATE (2026-09-20): two more additions, same "closes a real gap,
+     doesn't reintroduce the redundant module-links bar" reasoning —
+     (1) a "Start Free" header CTA (.header-cta): previously the only
+     signup link anywhere on this page was buried in the 5th of 5
+     equal-weight grid cards below; (2) a "Menu" secondary-nav button
+     (.mnav-more-toggle/.mnav-more-panel, same component and classes as
+     nav-component.html's), since this header had zero visibility into
+     the module template or the external MAIE ecosystem sites outside
+     that same buried card. -->
 <header>
   <div class="wordmark">MAIE <span>|</span> PRODUCT EXPERIENCE</div>
   <div class="header-right">
     <div class="eyebrow-tag">portal.joinmaie.com</div>
+    <button
+      class="mnav-more-toggle"
+      id="mnav-more-toggle"
+      type="button"
+      aria-haspopup="true"
+      aria-expanded="false"
+      aria-controls="mnav-more-panel"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <span class="mnav-more-label">Menu</span>
+    </button>
     <button class="mnav-theme-toggle" id="mnav-theme-toggle" type="button">
       <span class="mnav-theme-track">
         <span class="mnav-theme-thumb" id="mnav-theme-thumb"></span>
       </span>
       <span class="mnav-theme-label" id="mnav-theme-label"></span>
     </button>
+    <a class="header-cta" href="https://app.joinmaie.com/signup" target="_blank" rel="noopener">Start Free</a>
   </div>
 </header>
+
+<!-- "Menu" panel — root-relative hrefs (this page IS the site root). -->
+<div class="mnav-more-panel" id="mnav-more-panel" role="menu" aria-hidden="true">
+  <div class="mnav-more-group">
+    <div class="mnav-more-group-label">More From the Portal</div>
+    <a class="mnav-more-link" role="menuitem" href="experience-module/">Module Template</a>
+  </div>
+  <div class="mnav-more-group">
+    <div class="mnav-more-group-label">MAIE Ecosystem</div>
+    <a class="mnav-more-link" role="menuitem" href="https://joinmaie.com" target="_blank" rel="noopener">joinmaie.com</a>
+    <a class="mnav-more-link" role="menuitem" href="https://app.joinmaie.com" target="_blank" rel="noopener">The App</a>
+    <a class="mnav-more-link" role="menuitem" href="https://waitlist.joinmaie.com" target="_blank" rel="noopener">Waitlist</a>
+    <a class="mnav-more-link" role="menuitem" href="https://mma.joinmaie.com" target="_blank" rel="noopener">Midwest Media Alliance</a>
+  </div>
+</div>
 
 <main>
   <div class="hero-row">
@@ -438,6 +599,52 @@
       renderTheme();
       if (pixieController && window.getPixieThemeColors) {
         pixieController.update({ theme: window.getPixieThemeColors() });
+      }
+    });
+  }
+
+  // ── "Menu" — secondary nav (module template + MAIE ecosystem links) ──
+  // Same click-toggle / click-away / Escape pattern as nav-component.html's
+  // overlay/panel. One difference from the module pages: this header isn't
+  // a fixed --mnav-height tall (it's padding-driven, and its content row's
+  // height depends on the theme toggle's own 44px tap target) — so the
+  // panel's on-open position is measured off the real <header> instead of
+  // a hardcoded calc(), and re-measured on resize while open so it can't
+  // drift if the header ever wraps to a second line at some width.
+  var moreToggle = document.getElementById('mnav-more-toggle');
+  var morePanel  = document.getElementById('mnav-more-panel');
+  var headerEl   = document.querySelector('header');
+  if (moreToggle && morePanel && headerEl) {
+    var positionMore = function () {
+      morePanel.style.top = (headerEl.getBoundingClientRect().bottom + 8) + 'px';
+    };
+    var closeMore = function () {
+      morePanel.classList.remove('open');
+      morePanel.setAttribute('aria-hidden', 'true');
+      moreToggle.setAttribute('aria-expanded', 'false');
+      window.removeEventListener('resize', positionMore);
+    };
+    var openMore = function () {
+      positionMore();
+      morePanel.classList.add('open');
+      morePanel.setAttribute('aria-hidden', 'false');
+      moreToggle.setAttribute('aria-expanded', 'true');
+      window.addEventListener('resize', positionMore);
+    };
+    moreToggle.addEventListener('click', function () {
+      if (morePanel.classList.contains('open')) closeMore(); else openMore();
+    });
+    document.addEventListener('click', function (e) {
+      if (
+        morePanel.classList.contains('open') &&
+        !morePanel.contains(e.target) &&
+        !moreToggle.contains(e.target)
+      ) closeMore();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && morePanel.classList.contains('open')) {
+        closeMore();
+        moreToggle.focus();
       }
     });
   }
