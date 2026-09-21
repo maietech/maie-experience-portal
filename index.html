@@ -515,16 +515,16 @@
   }
 
   /* ── Mobile sub-bar ─────────────────────────────────────────────
-     Replaces the "Menu" dropdown at <= 720px: the same five links,
-     always visible under the header instead of behind a tap, so nothing
-     has to be scrolled to or discovered. Inverse-scheme bar: brand fill
-     (--brand = --primary: #A52A2A reddish in dark, #772E25 umbra in
-     light) with white text — 7.1:1 / 9.6:1 against those fills, so it
-     clears AA in both themes. Text stays light in BOTH themes on
-     purpose: dark text on the umbra fill would be ~2:1. Links wrap to a
-     second row on phones rather than scrolling sideways. Hidden entirely
-     (display:none, so also out of the a11y tree) above 720px, where the
-     dropdown takes over. Keep its links in sync with #mnav-more-panel. */
+     Replaces the header's "Menu" dropdown at <= 720px. Collapsed it is a
+     single full-width MENU bar (hamburger icon + label, 48px tall);
+     tapping it expands the same five links below it in a uniform grid.
+     Inverse-scheme bar: brand fill (--brand = --primary: #A52A2A reddish
+     in dark, #772E25 umbra in light) with white text — 7.1:1 / 9.6:1
+     against those fills, so it clears AA in both themes. Text stays light
+     in BOTH themes on purpose: dark text on the umbra fill would be ~2:1.
+     Hidden entirely (display:none, so also out of the a11y tree) above
+     720px, where the dropdown takes over. Keep its links in sync with
+     #mnav-more-panel. */
   .subbar { display: none; }
   @media (max-width: 720px) {
     .mnav-more-toggle,
@@ -533,36 +533,89 @@
     .subbar {
       position: relative;   /* + z-index: sit above the fixed .glow blobs, like <header> */
       z-index: 1;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: center;
-      gap: 0 4px;
-      padding: 4px 12px;
+      display: block;
       background: var(--brand);
+      color: #fff;
     }
-    .subbar a {
-      display: inline-flex;
+
+    .subbar-toggle {
+      display: flex;
       align-items: center;
-      min-height: 44px;
-      padding: 0 12px;
-      border-radius: 8px;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      min-height: 48px;
+      background: none;
+      border: 0;
       color: #fff;
       font: 600 13px/1 'DM Sans', sans-serif;
-      letter-spacing: 0.01em;
-      text-decoration: none;
-      white-space: nowrap;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
       transition: background 0.15s ease;
     }
-    .subbar a:hover,
-    .subbar a:focus-visible { background: rgba(255, 255, 255, 0.16); }
-    .subbar a:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+    .subbar-toggle:hover,
+    .subbar-toggle[aria-expanded="true"] { background: rgba(0, 0, 0, 0.14); }
+    .subbar-toggle:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
+    .subbar-toggle svg { width: 18px; height: 18px; flex-shrink: 0; }
+    /* hamburger <-> close, driven by aria-expanded so the icon can never
+       disagree with the state a screen reader announces */
+    .subbar-toggle .icon-close,
+    .subbar-toggle[aria-expanded="true"] .icon-open { display: none; }
+    .subbar-toggle[aria-expanded="true"] .icon-close { display: block; }
+
+    /* Expand/collapse: animating grid-template-rows 0fr -> 1fr gives a
+       smooth auto-height reveal without measuring in JS. visibility flips
+       after the collapse finishes (and immediately on open) so the hidden
+       links are out of the tab order and the a11y tree while collapsed. */
+    .subbar-panel {
+      display: grid;
+      grid-template-rows: 0fr;
+      visibility: hidden;
+      transition: grid-template-rows 0.28s var(--ease), visibility 0s linear 0.28s;
+    }
+    .subbar.open .subbar-panel {
+      grid-template-rows: 1fr;
+      visibility: visible;
+      transition: grid-template-rows 0.28s var(--ease), visibility 0s;
+    }
+    .subbar-inner { min-height: 0; overflow: hidden; }
+
+    /* Uniform grid: every cell is the same height and width, hairlines
+       come from a 1px gap over a translucent backing (the same trick the
+       module .grid above uses). One column on phones; two from 481px, with
+       an odd last item spanning the full row. */
+    .subbar-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1px;
+      background: rgba(255, 255, 255, 0.18);
+      border-top: 1px solid rgba(255, 255, 255, 0.18);   /* on the list, not the panel: a collapsed panel must be 0px tall */
+    }
+    .subbar-list a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 48px;
+      padding: 0 20px;
+      background-color: var(--brand);
+      color: #fff;
+      font: 500 14px/1.2 'DM Sans', sans-serif;
+      text-decoration: none;
+      transition: background-image 0.15s ease;
+    }
+    .subbar-list a:hover,
+    .subbar-list a:focus-visible {
+      background-image: linear-gradient(rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.14));
+    }
+    .subbar-list a:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
+    .subbar-list svg { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.85; }
   }
-  /* <= 350px (320px-class phones): tighten so the five links still fit
-     in two rows instead of three. */
-  @media (max-width: 350px) {
-    .subbar { gap: 0 2px; padding-inline: 8px; }
-    .subbar a { padding: 0 8px; font-size: 12.5px; }
+  @media (min-width: 481px) and (max-width: 720px) {
+    .subbar-list { grid-template-columns: 1fr 1fr; }
+    .subbar-list li:last-child:nth-child(odd) { grid-column: 1 / -1; }
   }
 
   footer {
@@ -581,7 +634,7 @@
     .card, .btn-pill, .btn-icon { transition: none; }
     .btn-pill:hover .btn-icon,
     .btn-pill:focus-visible .btn-icon { transform: none; }
-    .mnav-more-panel, .subbar a { transition: none; }
+    .mnav-more-panel, .subbar-toggle, .subbar-panel, .subbar-list a { transition: none; }
   }
 </style>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "76f318e193dd4ccfa03b354c28c3b6b3"}'></script><!-- End Cloudflare Web Analytics -->
@@ -615,8 +668,9 @@
      UPDATE (2026-09-20, mobile): the one-row header overflowed at every
      width <= 720px (Start Free was pushed off-screen). It now sheds items
      in priority order (see "Header: responsive collapse" in the CSS), and
-     at <= 720px the Menu dropdown is replaced by an always-visible
-     brand-colored sub-bar (.subbar) carrying the same links. -->
+     at <= 720px the Menu dropdown is replaced by a brand-colored
+     MENU sub-bar (.subbar) that expands to the same links in a uniform
+     grid. -->
 <header>
   <div class="wordmark">MAIE <span class="wordmark-sub"><span class="wordmark-sep">|</span> PRODUCT EXPERIENCE</span></div>
   <div class="header-right">
@@ -642,16 +696,29 @@
   </div>
 </header>
 
-<!-- Mobile sub-bar (<= 720px only; display:none above that). Same links as
-     the Menu panel below, which it replaces on small screens — keep the
-     two lists in sync. -->
-<nav class="subbar" aria-label="More from MAIE">
-  <a href="experience-module/">Module Template</a>
-  <a href="https://joinmaie.com" target="_blank" rel="noopener">joinmaie.com</a>
-  <a href="https://app.joinmaie.com" target="_blank" rel="noopener">The App</a>
-  <a href="https://waitlist.joinmaie.com" target="_blank" rel="noopener">Waitlist</a>
-  <a href="https://mma.joinmaie.com" target="_blank" rel="noopener">Midwest Media Alliance</a>
-</nav>
+<!-- Mobile sub-bar (<= 720px only; display:none above that). Collapsed = one
+     full-width MENU bar; the button expands the link grid beneath it. Same
+     links as the Menu panel below, which it replaces on small screens —
+     keep the two lists in sync. Internal link = arrow, external (new tab)
+     = diagonal arrow. -->
+<div class="subbar" id="subbar">
+  <button class="subbar-toggle" id="subbar-toggle" type="button" aria-expanded="false" aria-controls="subbar-panel">
+    <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    <span>Menu</span>
+  </button>
+  <nav class="subbar-panel" id="subbar-panel" aria-label="More from MAIE">
+    <div class="subbar-inner">
+      <ul class="subbar-list" role="list">
+          <li><a href="experience-module/">Module Template<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a></li>
+          <li><a href="https://joinmaie.com" target="_blank" rel="noopener">joinmaie.com<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 17 17 7M8 7h9v9"/></svg></a></li>
+          <li><a href="https://app.joinmaie.com" target="_blank" rel="noopener">The App<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 17 17 7M8 7h9v9"/></svg></a></li>
+          <li><a href="https://waitlist.joinmaie.com" target="_blank" rel="noopener">Waitlist<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 17 17 7M8 7h9v9"/></svg></a></li>
+          <li><a href="https://mma.joinmaie.com" target="_blank" rel="noopener">Midwest Media Alliance<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 17 17 7M8 7h9v9"/></svg></a></li>
+      </ul>
+    </div>
+  </nav>
+</div>
 
 <!-- "Menu" panel — root-relative hrefs (this page IS the site root). -->
 <div class="mnav-more-panel" id="mnav-more-panel" role="menu" aria-hidden="true">
@@ -874,6 +941,39 @@
         moreToggle.focus();
       }
     });
+  }
+
+  // ── Mobile sub-bar (<= 720px) — collapsed MENU bar, expands on tap ──
+  // Same click / click-away / Escape pattern as the header Menu above. State
+  // lives on aria-expanded (CSS reads it for the icon swap) and on .open.
+  // Closes itself when a link is followed and when the viewport grows past
+  // 720px, so it can never be left open behind the desktop layout.
+  var bar = document.getElementById('subbar');
+  var barToggle = document.getElementById('subbar-toggle');
+  if (bar && barToggle) {
+    var setBar = function (open) {
+      bar.classList.toggle('open', open);
+      barToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    barToggle.addEventListener('click', function () {
+      setBar(!bar.classList.contains('open'));
+    });
+    document.addEventListener('click', function (e) {
+      if (bar.classList.contains('open') && !bar.contains(e.target)) setBar(false);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && bar.classList.contains('open')) {
+        setBar(false);
+        barToggle.focus();
+      }
+    });
+    bar.querySelectorAll('.subbar-list a').forEach(function (a) {
+      a.addEventListener('click', function () { setBar(false); });
+    });
+    var wide = window.matchMedia('(min-width: 721px)');
+    var closeIfWide = function () { if (wide.matches) setBar(false); };
+    if (wide.addEventListener) wide.addEventListener('change', closeIfWide);
+    else if (wide.addListener) wide.addListener(closeIfWide);
   }
 })();
 </script>
