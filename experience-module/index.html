@@ -686,6 +686,379 @@ html {
 <body>
 
 <!-- ═══════════════════════════════════════════════════════════════════
+     GLOBAL MAIE NAV — ported from nav-component.html so this page has a
+     way out (previously had none — only the in-page chapter spine below,
+     no link back to the rest of the portal). Same markup/script as the
+     portal's other modules (dashboard/pitch/pixie/pixie-framework), with
+     one deliberate omission: the theme toggle. This module has no
+     [data-theme="light"] variant of its own (see this file's own DESIGN
+     TOKENS comment above) and the toggle's CSS lives only in
+     assets/maie-tokens.css, which this self-contained template
+     deliberately doesn't link (it duplicates the portal's tokens inline
+     instead, so a copied/renamed instance of this template — see this
+     file's own "HOW TO USE" header — keeps working without that external
+     dependency). Including the toggle without its CSS would render an
+     unstyled button; including it with light-mode CSS would flip the nav
+     to a light look while the rest of the page stayed dark-only. Left
+     out entirely rather than shipping either.
+
+     --mnav-* tokens below are the same dark-mode values
+     assets/maie-tokens.css defines, duplicated here for the same
+     self-contained-template reason as this page's existing DESIGN
+     TOKENS block — aliased to this page's own --primary/--font-ui/--bg-alt
+     where they already match, same pattern maie-tokens.css itself uses.
+     ═══════════════════════════════════════════════════════════════════ -->
+<style>
+  :root {
+    --mnav-bg:          rgba(16, 12, 11, 0.72);
+    --mnav-border:      rgba(255,255,255,0.08);
+    --mnav-text:        #f0e9e4;
+    --mnav-muted:       #9a8f88;
+    --mnav-brand:       var(--primary);
+    --mnav-brand-light: var(--primary-light);
+    --mnav-font:        var(--font-ui);
+    --mnav-height:      60px;
+    --mnav-overlay-bg:  var(--bg-alt);
+    --mnav-hover-bg:    rgba(255,255,255,0.05);
+    --mnav-active-bg:   rgba(165,42,42,0.26);
+    --mnav-active-ring: rgba(194,78,78,0.5);
+  }
+
+  .mnav {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    height: var(--mnav-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 clamp(16px, 3vw, 40px);
+    background: var(--mnav-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--mnav-border);
+    font-family: var(--mnav-font);
+  }
+
+  .mnav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--mnav-text);
+    flex-shrink: 0;
+    padding: 12px 0;
+    margin: -12px 0;
+  }
+  .mnav-brand svg { display: block; }
+  .mnav-logo { width: 34px; height: auto; flex-shrink: 0; }
+  .mnav-brand-word {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .mnav-links {
+    display: flex;
+    align-items: center;
+    gap: clamp(4px, 1.5vw, 8px);
+  }
+  .mnav-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--mnav-muted);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background .15s, color .15s;
+  }
+  .mnav-link svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.8; }
+  .mnav-link:hover { color: var(--mnav-text); background: var(--mnav-hover-bg); }
+  .mnav-link.active {
+    color: var(--mnav-text);
+    background: var(--mnav-active-bg);
+    box-shadow: inset 0 0 0 1px var(--mnav-active-ring);
+  }
+  .mnav-link.active svg { opacity: 1; color: var(--mnav-brand-light); }
+
+  .mnav-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .mnav-context {
+    font-size: 12px;
+    color: var(--mnav-muted);
+    padding: 5px 10px;
+    border: 1px solid var(--mnav-border);
+    border-radius: 999px;
+  }
+
+  .mnav-toggle {
+    display: none;
+    background: none;
+    border: 1px solid var(--mnav-border);
+    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    color: var(--mnav-text);
+    cursor: pointer;
+  }
+
+  .mnav-overlay {
+    display: none;
+    position: fixed;
+    inset: var(--mnav-height) 0 0 0;
+    z-index: 999;
+    background: var(--mnav-overlay-bg);
+    padding: 24px clamp(16px, 6vw, 40px);
+  }
+  .mnav-overlay.open { display: flex; flex-direction: column; gap: 4px; }
+  .mnav-overlay .mnav-link { font-size: 16px; padding: 14px 12px; }
+
+  .mnav-more-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid var(--mnav-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    height: 44px;
+    color: var(--mnav-text);
+    font-family: var(--mnav-font);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background .15s, border-color .15s;
+  }
+  .mnav-more-toggle:hover,
+  .mnav-more-toggle[aria-expanded="true"] {
+    background: var(--mnav-hover-bg);
+    border-color: var(--mnav-active-ring);
+  }
+  .mnav-more-toggle svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+  .mnav-more-panel {
+    position: fixed;
+    top: calc(var(--mnav-height) + 8px);
+    right: clamp(16px, 3vw, 40px);
+    z-index: 1001;
+    min-width: 220px;
+    max-width: min(320px, calc(100vw - 32px));
+    background: var(--mnav-overlay-bg);
+    border: 1px solid var(--mnav-border);
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transform-origin: top right;
+    opacity: 0;
+    transform: scale(0.92) translateY(-6px);
+    pointer-events: none;
+    transition: opacity 0.32s var(--ease-cinematic, cubic-bezier(0.16,1,0.3,1)), transform 0.32s var(--ease-cinematic, cubic-bezier(0.16,1,0.3,1));
+  }
+  .mnav-more-panel.open {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+  }
+  .mnav-more-group + .mnav-more-group {
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--mnav-border);
+  }
+  .mnav-more-group-label {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--mnav-muted);
+    padding: 6px 10px 4px;
+  }
+  .mnav-more-link {
+    display: block;
+    padding: 9px 10px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--mnav-text);
+    text-decoration: none;
+    transition: background .15s, color .15s;
+  }
+  .mnav-more-link:hover,
+  .mnav-more-link:focus-visible { background: var(--mnav-hover-bg); color: var(--mnav-brand-light); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mnav-more-panel { transition: none; }
+  }
+
+  @media (max-width: 720px) {
+    .mnav-links { display: none; }
+    .mnav-toggle { display: flex; }
+    .mnav-context { display: none; }
+  }
+
+  @media (max-width: 480px) {
+    .mnav-more-label { display: none; }
+    .mnav-more-toggle { padding: 8px; width: 44px; justify-content: center; }
+    .mnav-more-panel { right: 12px; left: 12px; max-width: none; }
+  }
+</style>
+
+<nav class="mnav" aria-label="MAIE global navigation">
+  <a class="mnav-brand" href="../">
+    <span class="mnav-brand-word">MAIE</span>
+    <svg class="mnav-logo" viewBox="0 0 92 56" fill="none" stroke="#A52A2A" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M 2,32 L 7,14 L 12,46 L 18,10 L 24,40
+               C 29,20 33,20 33,30 C 33,40 39,40 41,28
+               L 46,44 L 50,20 L 54,38
+               C 58,26 63,26 63,34 C 63,40 68,38 70,32
+               Q 73,29 76,32 T 84,32"/>
+      <circle cx="86" cy="32" r="3" fill="#FFD166" stroke="none"/>
+      <circle cx="86" cy="32" r="6.5" fill="none" stroke="#FFD166" stroke-width="1" opacity="0.4"/>
+    </svg>
+  </a>
+
+  <div class="mnav-links" id="mnav-links">
+    <a class="mnav-link" data-nav="dashboard" href="../dashboard/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      Dashboard
+    </a>
+    <a class="mnav-link" data-nav="experience" href="../pixie/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/></svg>
+      Experience
+    </a>
+    <a class="mnav-link" data-nav="companion" href="../pixie-framework/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-4.4-9.5-9A5.5 5.5 0 0 1 12 6.5 5.5 5.5 0 0 1 21.5 12c-2.5 4.6-9.5 9-9.5 9Z"/></svg>
+      Companion
+    </a>
+    <a class="mnav-link" data-nav="pitch" href="../pitch/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19V5a2 2 0 0 1 2-2h8l6 6v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M14 3v6h6"/></svg>
+      Pitch
+    </a>
+  </div>
+
+  <div class="mnav-right">
+    <button
+      class="mnav-more-toggle"
+      id="mnav-more-toggle"
+      type="button"
+      aria-haspopup="true"
+      aria-expanded="false"
+      aria-controls="mnav-more-panel"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <span class="mnav-more-label">Menu</span>
+    </button>
+    <button class="mnav-toggle" id="mnav-toggle" aria-label="Open menu" aria-expanded="false">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+  </div>
+</nav>
+
+<div class="mnav-overlay" id="mnav-overlay"></div>
+
+<!-- "Menu" panel — pages beyond the primary 4-link bar, plus the wider
+     MAIE ecosystem. "../"-prefixed, same as the primary links above
+     (this page is one directory deep). -->
+<div class="mnav-more-panel" id="mnav-more-panel" role="menu" aria-hidden="true">
+  <div class="mnav-more-group">
+    <div class="mnav-more-group-label">More From the Portal</div>
+    <a class="mnav-more-link" role="menuitem" href="../experience-module/">Module Template</a>
+  </div>
+  <div class="mnav-more-group">
+    <div class="mnav-more-group-label">MAIE Ecosystem</div>
+    <a class="mnav-more-link" role="menuitem" href="https://joinmaie.com" target="_blank" rel="noopener">joinmaie.com</a>
+    <a class="mnav-more-link" role="menuitem" href="https://app.joinmaie.com" target="_blank" rel="noopener">The App</a>
+    <a class="mnav-more-link" role="menuitem" href="https://waitlist.joinmaie.com" target="_blank" rel="noopener">Waitlist</a>
+    <a class="mnav-more-link" role="menuitem" href="https://mma.joinmaie.com" target="_blank" rel="noopener">Midwest Media Alliance</a>
+  </div>
+</div>
+
+<script>
+(function () {
+  var current = document.body.getAttribute('data-nav');
+  document.querySelectorAll('.mnav-link[data-nav]').forEach(function (el) {
+    if (current && el.getAttribute('data-nav') === current) {
+      el.classList.add('active');
+      var label = el.textContent.trim();
+      var ctx = document.getElementById('mnav-context');
+      if (ctx) ctx.textContent = label;
+    }
+  });
+
+  var toggle = document.getElementById('mnav-toggle');
+  var overlay = document.getElementById('mnav-overlay');
+  var linksSrc = document.getElementById('mnav-links');
+  if (toggle && overlay && linksSrc) {
+    overlay.innerHTML = linksSrc.innerHTML;
+    toggle.addEventListener('click', function () {
+      var open = overlay.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    overlay.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { overlay.classList.remove('open'); });
+    });
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) {
+        overlay.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && overlay.classList.contains('open')) {
+        overlay.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.focus();
+      }
+    });
+  }
+
+  var moreToggle = document.getElementById('mnav-more-toggle');
+  var morePanel  = document.getElementById('mnav-more-panel');
+  if (moreToggle && morePanel) {
+    var closeMore = function () {
+      morePanel.classList.remove('open');
+      morePanel.setAttribute('aria-hidden', 'true');
+      moreToggle.setAttribute('aria-expanded', 'false');
+    };
+    var openMore = function () {
+      morePanel.classList.add('open');
+      morePanel.setAttribute('aria-hidden', 'false');
+      moreToggle.setAttribute('aria-expanded', 'true');
+    };
+    moreToggle.addEventListener('click', function () {
+      if (morePanel.classList.contains('open')) closeMore(); else openMore();
+    });
+    document.addEventListener('click', function (e) {
+      if (
+        morePanel.classList.contains('open') &&
+        !morePanel.contains(e.target) &&
+        !moreToggle.contains(e.target)
+      ) closeMore();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && morePanel.classList.contains('open')) {
+        closeMore();
+        moreToggle.focus();
+      }
+    });
+  }
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════
      MODULE CONFIG — Edit everything below until END MODULE_CONFIG.
      Nothing else needs to change for a standard module.
      ═══════════════════════════════════════════════════════════════════ -->
