@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://maietech.github.io/maie-experience-portal/</loc>
+    <loc>https://portal.joinmaie.com/</loc>
   </url>
   <url>
-    <loc>https://maietech.github.io/maie-experience-portal/pitch/</loc>
+    <loc>https://portal.joinmaie.com/pitch/</loc>
   </url>
   <url>
-    <loc>https://maietech.github.io/maie-experience-portal/dashboard/</loc>
+    <loc>https://portal.joinmaie.com/dashboard/</loc>
   </url>
   <url>
-    <loc>https://maietech.github.io/maie-experience-portal/pixie/</loc>
+    <loc>https://portal.joinmaie.com/pixie/</loc>
   </url>
   <url>
-    <loc>https://maietech.github.io/maie-experience-portal/pixie-framework/</loc>
+    <loc>https://portal.joinmaie.com/pixie-framework/</loc>
   </url>
   <url>
-    <loc>https://maietech.github.io/maie-experience-portal/experience-module/</loc>
+    <loc>https://portal.joinmaie.com/experience-module/</loc>
   </url>
 </urlset>
